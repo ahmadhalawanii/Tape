@@ -64,4 +64,6 @@ def tape(request):
     with cassette as run:
         yield run
         if getattr(request.node, "_llmtape_failed", False):
-            cassette.strict = False    # the test's own failure explains a short run
+            # The test already failed and reported why; don't raise it again at teardown.
+            cassette.strict = False
+            cassette._divergence = None

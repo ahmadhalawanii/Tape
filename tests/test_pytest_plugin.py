@@ -58,3 +58,25 @@ def test_tape_dir_keeps_the_package_path(pytester):
     pytester.runpytest("--tape-dir=tapes", "--import-mode=importlib").assert_outcomes(passed=2)
     assert (pytester.path / "tapes" / "a" / "test_same" / "test_t.json").exists()
     assert (pytester.path / "tapes" / "b" / "test_same" / "test_t.json").exists()
+
+
+def test_a_divergence_is_reported_once(pytester, monkeypatch):
+    pytester.makeconftest("""
+import pytest
+from llmtape.testing import scripted_client
+
+@pytest.fixture
+def client():
+    return scripted_client(lambda r: [{"type": "text", "text": "hi"}])
+""")
+    pytester.makepyfile(test_agent="""
+import os
+def test_prompt(client, tape):
+    client.messages.create(model="m", max_tokens=5, system=os.environ.get("PROMPT", "v1"),
+                           messages=[{"role": "user", "content": "x"}])
+""")
+    pytester.runpytest().assert_outcomes(passed=1)
+    monkeypatch.setenv("PROMPT", "v2")
+    result = pytester.runpytest("--tape-mode=replay")
+    result.assert_outcomes(failed=1, errors=0)
+    result.stdout.fnmatch_lines(["*diverged*model call #0*"])
