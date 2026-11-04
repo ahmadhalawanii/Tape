@@ -4,7 +4,7 @@
     "prompt": "before",
     "recorded_against": "scripted stand-in model (examples/refund_desk/scripted_model.py)",
     "mode": "record",
-    "recorded_at": "2026-11-04T12:47:35+00:00"
+    "recorded_at": "2026-11-04T16:50:15+00:00"
   },
   "events": [
     {
@@ -102,7 +102,7 @@
           "output_tokens": 38
         }
       },
-      "latency_ms": 27
+      "latency_ms": 30
     },
     {
       "kind": "tool",

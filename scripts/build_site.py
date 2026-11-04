@@ -101,6 +101,7 @@ HTML = r'''<!doctype html>
 <meta property="og:description" content="Record, replay and diff LLM agent runs. Open source, Python, pytest.">
 <meta property="og:image" content="site.png">
 <meta name="theme-color" content="#F1EEE7">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231E1E1E'/><circle cx='16' cy='16' r='9' fill='none' stroke='%23F1EEE7' stroke-width='2.6'/><circle cx='16' cy='16' r='3.4' fill='%23F1EEE7'/><circle cx='25.5' cy='6.5' r='3.2' fill='%23FF6A1A'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
