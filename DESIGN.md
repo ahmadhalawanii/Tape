@@ -1,46 +1,37 @@
 ---
 name: Tape
-description: The product demo is the design. A calm charcoal developer-tool site where an interactive replay shows what Tape does.
+description: Agents drift, Tape keeps the receipts. Warm paper and charcoal, cassette reels made of type, ASCII receipts.
 colors:
-  charcoal: "#0B0C0E"
-  panel: "#121317"
-  panel-2: "#17181D"
-  raised: "#1D1F25"
-  well: "#0F1013"
-  line: "#24262D"
-  line-2: "#2F323A"
-  ink: "#EDEEF0"
-  soft: "#C4C7CE"
-  dim: "#8B8F98"
-  gutter: "#4A4E57"
-  lime: "#C8F05A"
-  lime-ink: "#11160A"
-  coral: "#FF6B57"
-  coral-ink: "#1A0B08"
-  coral-soft: "#FFB3A8"
-  amber: "#F5C350"
-  keyword: "#A9B4FF"
+  paper: "#F1EEE7"
+  ink: "#232323"
+  soft: "#5E5B55"
+  dark: "#1E1E1E"
+  rule: "#BDB8AE"
+  button: "#DDD9D1"
+  dot: "#FF6A1A"
+  red: "#E5432B"
+  green: "#2E7D4F"
 typography:
-  display: { fontFamily: "Geist", fontWeight: 600, letterSpacing: "-0.045em" }
+  heading: { fontFamily: "Geist", fontWeight: 500, letterSpacing: "-0.03em" }
   body: { fontFamily: "Geist", fontWeight: 400 }
-  code: { fontFamily: "Geist Mono", fontWeight: 400 }
-rounded: { sm: "6px", md: "10px", lg: "14px", xl: "18px" }
+  label: { fontFamily: "Geist Mono", fontWeight: 500, note: "uppercase labels, receipts and code" }
+rounded: { sm: "6px", md: "10px" }
 ---
 
 ## Overview
-Tape's site sells by showing. The hero is an interactive replay: switch the refund agent's prompt from v1 to v2, watch one rule disappear, the run replay step by step, `issue_refund $489` light up, and the test turn red. Everything else stays calm so that moment carries the page.
+Inspired by contentarchitecture.dev and made Tape's own. An agent run is an itemised log, so the site talks in receipts. The hero splits warm paper (copy) from a dark dotted panel holding two cassette reels whose rings are the agent's real recorded calls; side B carries the bug in red. Scrolling reaches a replay receipt that prints line by line while the total counts up to $489.
 
-## Colors
-Charcoal ground with layered panels. Lime means recorded, passing, or the brand mark. Coral means divergence, a skipped rule, or a failing test. Amber marks changed arguments in the report. Colour is used for state, never decoration.
+## Colours
+All colours are CSS variables at the top of the page (`scripts/build_site.py`), so the site can be recoloured in one place. Red marks the bug only. The orange dot is a small accent on the primary button and the GitHub link. Green marks passing checks.
 
 ## Typography
-Geist for UI and headings, set tight (-0.045em on the hero); Geist Mono for prompts, tool calls, code and terminals. The generated report lists Geist first but falls back to system faces, because it is a single offline file.
+Geist for headings and body, Geist Mono uppercase for labels, receipts and code.
 
 ## Components
-- Demo panel: segmented control with a sliding thumb, prompt pane, run timeline on a spine, terminal strip with PASSED/FAILED badge.
-- Flow: three connected columns (record, replay, diff) on one rule, the last tick lime.
-- Editor: tabbed code panel with line numbers; PR comment: the CI markdown summary rendered.
-- Spec grid: two columns of short facts on hairlines, the limits stated in the last cell.
+- Floating dark nav pill with a ticker (stops under reduced motion).
+- Text reels: SVG text on circular paths, stretched to the circumference so each ring wraps once; they turn slowly.
+- ASCII receipts generated in Python so borders always align; dot leaders between label and value.
+- Dark band with three steps (record, replay, diff), tabbed test and failure output, itemised spec receipt, dark closing band with the install command.
 
 ## Motion
-One authored moment: the demo replays when it first scrolls into view (once), steps rising 380ms apart with an exponential ease-out. Sections fade up on first view. All of it is off under reduced motion.
+Reels idle-rotate; the receipt prints once on first view and the $489 counts up beside it; sections fade up once. All off under reduced motion.

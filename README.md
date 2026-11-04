@@ -8,7 +8,7 @@ cost nothing, and give the same answer every time. When you change a prompt or t
 agent's code, Tape tells you exactly where the run stopped matching the recording, and
 shows what the agent now does differently.
 
-![Tape's project site: an interactive replay where a friendlier prompt makes the agent skip its policy check and refund $489](docs/site.png)
+![Tape's project site: agents drift, Tape keeps the receipts, with two cassette reels made of the agent's recorded calls](docs/site.png)
 
 ![A Tape diff: a prompt rewrite makes the agent skip the policy check and refund $489](docs/screenshot.png)
 
@@ -189,6 +189,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 pytest
 python -m examples.refund_desk.demo     # rebuilds docs/report.html
+python scripts/build_site.py docs/index.html   # rebuilds the landing page
 ```
 
 MIT licensed.

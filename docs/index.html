@@ -3,499 +3,298 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tape: record, replay and diff AI agents</title>
-<meta name="description" content="Record every model and tool call your AI agent makes. Replay it in tests for free, and fail the build the moment the agent starts behaving differently.">
-<meta property="og:title" content="Tape: your agent changed, Tape noticed">
+<title>Tape: agents drift, Tape keeps the receipts</title>
+<meta name="description" content="Record every model and tool call your AI agent makes. Replay it in tests for free, and fail on the first call that changes.">
+<meta property="og:title" content="Tape: agents drift, Tape keeps the receipts">
 <meta property="og:description" content="Record, replay and diff LLM agent runs. Open source, Python, pytest.">
 <meta property="og:image" content="site.png">
-<meta name="theme-color" content="#0B0C0E">
+<meta name="theme-color" content="#F1EEE7">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+/* The whole palette. Change these to recolour the site. */
 :root {
-  --bg: #0B0C0E; --panel: #121317; --panel-2: #17181D; --raised: #1D1F25; --line: #24262D; --line-2: #2F323A;
-  --ink: #EDEEF0; --soft: #C4C7CE; --dim: #8B8F98;
-  --lime: #C8F05A; --lime-ink: #11160A; --coral: #FF6B57; --coral-ink: #1A0B08; --amber: #F5C350;
+  --paper: #F1EEE7;   /* light ground */
+  --ink: #232323;     /* text and dark buttons */
+  --soft: #5E5B55;    /* secondary text */
+  --dark: #1E1E1E;    /* dark panels */
+  --rule: #BDB8AE;    /* dashed lines */
+  --btn: #DDD9D1;     /* light buttons */
+  --dot: #FF6A1A;     /* small accent dots */
+  --red: #E5432B;     /* the bug */
+  --green: #2E7D4F;   /* passing */
   --sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --mono: "Geist Mono", ui-monospace, Menlo, monospace;
   --ease: cubic-bezier(.16, 1, .3, 1);
-  color-scheme: dark;
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scrollbar-color: var(--line-2) var(--bg); }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
-::selection { background: rgba(200, 240, 90, .28); }
-a { color: inherit; text-decoration: none; }
-:focus-visible { outline: 2px solid var(--lime); outline-offset: 3px; border-radius: 6px; }
-code, pre, .mono { font-family: var(--mono); }
-.wrap { max-width: 1160px; margin: 0 auto; padding: 0 32px; }
-@media (max-width: 640px) { .wrap { padding: 0 18px; } }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--ink); color: var(--paper); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--dot); outline-offset: 3px; }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--ink); color: var(--paper); padding: 8px 12px; z-index: 20; }
+.skip:focus { left: 8px; }
+.mono { font-family: var(--mono); }
 
-/* ---- nav ---- */
-.nav { position: sticky; top: 0; z-index: 10; backdrop-filter: saturate(140%) blur(12px); background: rgba(11, 12, 14, .72);
-  border-bottom: 1px solid transparent; transition: border-color .3s; }
-.nav.scrolled { border-color: var(--line); }
-.nav .wrap { display: flex; justify-content: space-between; align-items: center; height: 68px; }
-.logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 18px; letter-spacing: -.01em; }
-.reel { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--lime); display: grid; place-items: center; }
-.reel::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--lime); }
-.links { display: flex; align-items: center; gap: 28px; font-size: 14.5px; color: var(--dim); }
-.links a:hover { color: var(--ink); }
-.gh { display: inline-flex; align-items: center; gap: 8px; color: var(--ink) !important; border: 1px solid var(--line-2); padding: 7px 13px; border-radius: 9px; transition: background .2s, border-color .2s; }
-.gh:hover { background: var(--panel-2); border-color: var(--dim); }
-.gh svg { width: 16px; height: 16px; fill: currentColor; }
-@media (max-width: 640px) { .links .hide-sm { display: none; } .links { gap: 16px; } }
+/* nav pill */
+.pill { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 10; background: var(--dark); border-radius: 10px;
+  padding: 8px 10px 7px; width: min(520px, calc(100% - 24px)); box-shadow: 0 8px 22px rgba(0,0,0,.22); }
+.pill nav { display: flex; align-items: center; gap: 22px; font: 500 13px var(--mono); color: #BDBAB2; padding: 2px 6px 8px; }
+.pill nav a { text-decoration: none; padding: 4px 0; transition: color .2s; }
+.pill nav a:hover { color: var(--paper); }
+.logo { width: 26px; height: 26px; border: 1.5px solid var(--paper); border-radius: 50%; display: grid; place-items: center; flex: none; margin-right: 2px; }
+.logo::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--paper); }
+.pill nav .gh { color: var(--paper); position: relative; margin-left: auto; }
+.pill nav .gh::after { content: ""; position: absolute; right: -9px; top: 1px; width: 6px; height: 6px; border-radius: 50%; background: var(--dot); }
+.tick { background: var(--paper); color: var(--ink); font: 500 11.5px var(--mono); letter-spacing: .04em; white-space: nowrap; overflow: hidden; padding: 3px 0; border-radius: 3px; }
+.tick span { display: inline-block; padding-left: 6px; animation: tick 28s linear infinite; }
+@keyframes tick { to { transform: translateX(-50%); } }
+@media (max-width: 560px) { .pill nav .hide-sm { display: none; } }
 
-/* ---- hero ---- */
-.hero { position: relative; padding: 96px 0 48px; }
-.hero::before { content: ""; position: absolute; inset: -68px 0 0; z-index: -1; pointer-events: none;
-  background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px); background-size: 22px 22px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 20%, #000 30%, transparent 75%); }
-.hero-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: end; }
-@media (max-width: 900px) { .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; } .hero { padding-top: 56px; } }
-h1 { font-size: clamp(2.9rem, 6.4vw, 4.6rem); line-height: 1.0; letter-spacing: -.045em; font-weight: 600; margin: 0; }
-h1 em { font-style: normal; color: var(--lime); }
-.sub { color: var(--dim); font-size: 18.5px; line-height: 1.55; max-width: 42ch; margin: 0 0 22px; }
-.sub b { color: var(--soft); font-weight: 500; }
-.install { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 7px 7px 7px 16px; max-width: 560px; }
-.install code { flex: 1; min-width: 0; font-size: 13.5px; color: var(--soft); white-space: nowrap; overflow-x: auto; scrollbar-width: none; }
-.install code span { color: var(--dim); user-select: none; }
-.copy { font: 500 13px var(--sans); background: var(--ink); color: var(--bg); border: 0; border-radius: 8px; padding: 8px 13px; cursor: pointer; min-width: 70px; transition: transform .15s; }
-.copy:active { transform: scale(.96); }
-.cta-row { display: flex; gap: 22px; margin-top: 16px; font-size: 14.5px; color: var(--dim); flex-wrap: wrap; }
-.cta-row a { border-bottom: 1px solid var(--line-2); padding-bottom: 2px; transition: color .2s, border-color .2s; }
-.cta-row a:hover { color: var(--ink); border-color: var(--ink); }
+/* hero */
+.hero { display: grid; grid-template-columns: 1fr 1fr; min-height: 100svh; }
+.hero .l { padding: 120px 80px 48px; display: flex; flex-direction: column; justify-content: center; position: relative; }
+.kick { font: 500 14.5px var(--mono); margin: 0 0 22px; }
+h1 { font: 500 clamp(2.4rem, 3.8vw, 3.4rem)/1.06 var(--sans); letter-spacing: -.03em; margin: 0 0 28px; }
+.lede { color: var(--soft); font-size: 17px; max-width: 44ch; margin: 0 0 32px; }
+.btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn { font: 500 14.5px var(--mono); background: var(--ink); color: var(--paper); padding: 15px 22px; border-radius: 7px; text-decoration: none; position: relative;
+  border: 0; cursor: pointer; transition: transform .2s var(--ease), background .2s; }
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(0); }
+.btn.o { background: var(--btn); color: var(--ink); }
+.btn i { position: absolute; right: 8px; top: 8px; width: 7px; height: 7px; border-radius: 50%; background: var(--dot); }
+.scroll { position: absolute; left: 80px; bottom: 40px; font: 500 13.5px var(--mono); display: flex; gap: 10px; align-items: center; }
+.scroll::before { content: ""; width: 14px; height: 14px; border: 1px solid var(--ink); border-radius: 50%; background: radial-gradient(var(--ink) 0 2.5px, transparent 3px); }
+.hero .r { background: var(--dark); position: relative; overflow: hidden; color: var(--paper);
+  background-image: radial-gradient(rgba(241,238,231,.16) 1px, transparent 1.2px); background-size: 18px 18px; }
+.hero .r svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hero .r text { font-family: var(--mono); letter-spacing: .12em; text-transform: uppercase; fill: var(--paper); }
+.hero .r .bug { fill: var(--red); }
+.reel { animation: spin 90s linear infinite; }
+.rings g.reel:nth-child(odd) { animation-direction: reverse; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.cap { position: absolute; left: 28px; bottom: 26px; font: 500 12px var(--mono); color: #BDBAB2; letter-spacing: .04em; margin: 0; }
+.cap b { color: var(--paper); font-weight: 500; }
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; min-height: 0; }
+  .hero .l { padding: 120px 20px 40px; }
+  .scroll { position: static; margin-top: 36px; }
+  .hero .r { height: 560px; }
+}
 
-/* ---- demo ---- */
-.demo { margin-top: 56px; border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
-  background: linear-gradient(180deg, #111216, #0D0E11); box-shadow: 0 30px 60px -30px rgba(0,0,0,.85); }
-.bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-.seg { display: flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; position: relative; }
-.seg button { font: 500 13.5px var(--sans); color: var(--dim); background: none; border: 0; padding: 7px 13px; border-radius: 7px; cursor: pointer; position: relative; z-index: 1; transition: color .25s; }
-.seg button[aria-pressed="true"] { color: var(--ink); }
-.seg .thumb { position: absolute; top: 3px; bottom: 3px; border-radius: 7px; background: var(--raised); box-shadow: 0 1px 0 rgba(255,255,255,.05) inset; transition: left .45s var(--ease), width .45s var(--ease); }
-.replay { font: 600 13.5px var(--sans); background: var(--coral); color: var(--coral-ink); border: 0; border-radius: 9px; padding: 9px 14px; cursor: pointer; display: inline-flex; gap: 7px; align-items: center; transition: filter .2s, transform .15s; }
-.replay:hover { filter: brightness(1.08); } .replay:active { transform: scale(.97); }
-.replay svg { width: 14px; height: 14px; }
-.panes { display: grid; grid-template-columns: .95fr 1.05fr; }
-@media (max-width: 860px) { .panes { grid-template-columns: minmax(0, 1fr); } }
-.pane { padding: 20px 22px 24px; min-width: 0; }
-.pane + .pane { border-left: 1px solid var(--line); }
-@media (max-width: 860px) { .pane + .pane { border-left: 0; border-top: 1px solid var(--line); } }
-.label { font: 500 12px var(--mono); color: var(--dim); margin-bottom: 14px; display: flex; justify-content: space-between; gap: 10px; }
-.prompt { font: 13.5px/1.8 var(--mono); color: var(--soft); }
-.prompt .w { border-radius: 4px; padding: 1px 4px; margin: 0 -4px; transition: background .5s, color .5s; }
-.prompt .line { display: block; transition: opacity .5s; }
-.prompt .rule { border-radius: 4px; padding: 1px 4px; margin-left: -4px; text-decoration: line-through; text-decoration-color: transparent;
-  transition: color .5s, background .5s, text-decoration-color .5s; }
-.v2 .prompt .w { background: rgba(200, 240, 90, .1); color: var(--ink); }
-.v2 .prompt .rule { color: var(--coral); background: rgba(255, 107, 87, .08); text-decoration-color: rgba(255, 107, 87, .8); }
-.prompt .w-in { display: inline-block; overflow: hidden; vertical-align: bottom; max-width: 0; white-space: nowrap; transition: max-width .6s var(--ease); }
-.v2 .prompt .w-in { max-width: 9ch; }
-.run { position: relative; padding-left: 24px; list-style: none; margin: 0; }
-.run::before { content: ""; position: absolute; left: 6px; top: 10px; bottom: 10px; width: 2px; background: var(--line); }
-.step { position: relative; margin-bottom: 10px; font: 13.5px var(--mono); background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px;
-  padding: 10px 13px; display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
-  transition: opacity .45s var(--ease), transform .45s var(--ease), background .4s, border-color .4s, color .4s; }
-.step::before { content: ""; position: absolute; left: -23px; top: 14px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg); border: 2px solid var(--dim); transition: background .4s, border-color .4s; }
-.step small { color: var(--dim); font: 12.5px var(--sans); white-space: nowrap; }
-.step.pending { opacity: 0; transform: translateY(6px); }
-.step.ok { border-color: rgba(200, 240, 90, .35); }
-.step.ok::before { border-color: var(--lime); background: var(--lime); }
-.step.ok small { color: var(--lime); }
-.step.ghost { opacity: .42; border-style: dashed; text-decoration: line-through; }
-.step.bad { border-color: rgba(255, 107, 87, .6); background: rgba(255, 107, 87, .07); color: #FFB3A8; }
-.step.bad::before { border-color: var(--coral); background: var(--coral); }
-.step.bad small { color: var(--coral); }
-.term { border-top: 1px solid var(--line); background: #09090B; padding: 14px 22px 16px; font: 13px/1.7 var(--mono); color: var(--dim); min-height: 76px; overflow-wrap: anywhere; }
-.badge { font-weight: 500; padding: 1px 7px; border-radius: 5px; margin-right: 9px; }
-.badge.pass { background: var(--lime); color: var(--lime-ink); }
-.badge.fail { background: var(--coral); color: var(--coral-ink); }
-.term .e { color: var(--coral); } .term .t { color: var(--ink); }
-.facts { display: flex; gap: 12px 30px; color: var(--dim); font-size: 14.5px; padding: 20px 2px 0; flex-wrap: wrap; }
-.facts b { color: var(--ink); font-weight: 500; }
-.facts .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--lime); margin-right: 9px; vertical-align: 2px; }
+/* sections */
+section.s { padding: 140px 80px 0; }
+@media (max-width: 900px) { section.s { padding: 96px 20px 0; } }
+h2 { font: 500 clamp(2.1rem, 3.6vw, 3.1rem)/1.06 var(--sans); letter-spacing: -.03em; margin: 0 0 20px; }
+.s p.sub { color: var(--soft); font-size: 17px; max-width: 44ch; margin: 0; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+@media (max-width: 900px) { .split { grid-template-columns: minmax(0, 1fr); gap: 48px; } }
+.big { font: 500 clamp(7rem, 16vw, 14.5rem)/.9 var(--sans); letter-spacing: -.06em; margin-top: 60px; font-variant-numeric: tabular-nums; }
+.big small { font-size: .42em; letter-spacing: -.03em; vertical-align: .95em; margin-right: 6px; }
+pre.rc { font: 500 13.5px/1.75 var(--mono); margin: 0; white-space: pre; overflow-x: auto; }
+pre.rc .ln { display: block; }
+pre.rc .d { color: #8A867E; } pre.rc .x { color: var(--red); } pre.rc .hl { background: var(--ink); color: var(--paper); }
+.printing .ln { opacity: 0; transform: translateY(4px); }
+.printing .ln.on { opacity: 1; transform: none; transition: opacity .25s, transform .35s var(--ease); }
+@media (max-width: 560px) { pre.rc { font-size: 10.5px; } }
 
-/* ---- sections ---- */
-section.sec { padding: 120px 0 0; }
-@media (max-width: 640px) { section.sec { padding-top: 88px; } }
-h2 { font-size: clamp(2rem, 4vw, 2.9rem); line-height: 1.08; letter-spacing: -.035em; font-weight: 600; margin: 0 0 16px; max-width: 18ch; text-wrap: balance; }
-h2 em { font-style: normal; color: var(--dim); }
-.lead { color: var(--dim); font-size: 18px; max-width: 58ch; margin: 0 0 48px; }
+/* dark band: how it works */
+.band { background: var(--dark); color: var(--paper); margin-top: 140px; padding: 110px 80px;
+  background-image: radial-gradient(rgba(241,238,231,.1) 1px, transparent 1.2px); background-size: 18px 18px; }
+@media (max-width: 900px) { .band { padding: 80px 20px; margin-top: 96px; } }
+.band h2 { color: var(--paper); max-width: 18ch; }
+.band .sub { color: #BDBAB2 !important; margin-bottom: 56px !important; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px dashed rgba(241,238,231,.3); }
+@media (max-width: 900px) { .steps { grid-template-columns: minmax(0, 1fr); } }
+.steps > div { padding: 26px 28px 8px 0; }
+.steps > div + div { padding-left: 28px; border-left: 1px dashed rgba(241,238,231,.3); }
+@media (max-width: 900px) { .steps > div + div { padding-left: 0; border-left: 0; border-top: 1px dashed rgba(241,238,231,.3); } }
+.steps .n { font: 500 13px var(--mono); color: #BDBAB2; }
+.steps h3 { font: 500 24px var(--sans); letter-spacing: -.02em; margin: 6px 0 10px; }
+.steps p { color: #BDBAB2; margin: 0 0 20px; }
+.steps pre { margin: 0 0 18px; font: 13px/1.7 var(--mono); color: var(--paper); overflow-x: auto; }
+.steps pre .c { color: #8F8B83; } .steps pre .x { color: #FF7A63; } .steps pre .g { color: #8FD6A6; }
 
-/* record -> replay -> diff */
-.flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; position: relative; border-top: 1px solid var(--line); }
-@media (max-width: 860px) { .flow { grid-template-columns: minmax(0, 1fr); } }
-.flow > div { padding: 28px 28px 8px 0; position: relative; }
-.flow > div + div { padding-left: 28px; border-left: 1px solid var(--line); }
-@media (max-width: 860px) { .flow > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); } .flow > div { padding-right: 0; } }
-.flow .tick { position: absolute; top: -5px; left: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--bg); border: 2px solid var(--dim); }
-.flow > div + div .tick { left: -5px; }
-.flow > div:last-child .tick { background: var(--lime); border-color: var(--lime); }
-.flow h3 { font-size: 19px; letter-spacing: -.015em; margin: 4px 0 8px; font-weight: 600; }
-.flow p { color: var(--dim); margin: 0 0 18px; font-size: 15.5px; }
-.flow pre { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--soft); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; }
-.k { color: #A9B4FF; } .s { color: var(--lime); } .c { color: var(--dim); } .r { color: var(--coral); }
-
-/* editor with tabs */
-.split { display: grid; grid-template-columns: .8fr 1.2fr; gap: 56px; align-items: start; }
-@media (max-width: 900px) { .split { grid-template-columns: minmax(0, 1fr); gap: 32px; } }
-.checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
-.checks li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; color: var(--soft); }
-.checks li::before { content: ""; width: 16px; height: 16px; margin-top: 4px; border-radius: 5px; background: rgba(200, 240, 90, .14);
-  box-shadow: inset 0 0 0 1px rgba(200, 240, 90, .45); }
-.checks code { font-size: .88em; color: var(--ink); }
-.editor { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); }
-.tabs { display: flex; border-bottom: 1px solid var(--line); background: #0F1013; }
-.tabs button { font: 500 13px var(--mono); color: var(--dim); background: none; border: 0; border-right: 1px solid var(--line); padding: 12px 16px; cursor: pointer; position: relative; }
-.tabs button[aria-selected="true"] { color: var(--ink); background: var(--panel); }
-.tabs button[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--lime); }
-.editor pre { margin: 0; padding: 20px 22px; font-size: 13.5px; line-height: 1.75; overflow-x: auto; color: var(--soft); min-height: 300px; }
-.editor .ln { color: #4A4E57; user-select: none; display: inline-block; width: 2.2ch; margin-right: 14px; text-align: right; }
+/* test + output */
+.tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.tabs button { font: 500 13px var(--mono); background: var(--btn); color: var(--ink); border: 0; border-radius: 6px; padding: 9px 14px; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
+.code { background: #FBFAF6; border: 1px dashed var(--rule); border-radius: 8px; padding: 22px 24px; font: 13.5px/1.75 var(--mono); margin: 0; overflow-x: auto; min-height: 250px; }
+.code .k { color: #7A4CC2; } .code .s { color: var(--green); } .code .x { color: var(--red); } .code .c { color: #8A867E; }
 [hidden] { display: none !important; }
-
-/* PR comment */
-.pr { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); }
-.pr-head { display: flex; align-items: center; gap: 12px; padding: 13px 18px; border-bottom: 1px solid var(--line); background: #0F1013; font-size: 14px; color: var(--dim); flex-wrap: wrap; }
-.pr-head b { color: var(--ink); font-weight: 600; }
-.avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--raised); display: grid; place-items: center; }
-.avatar .reel { width: 14px; height: 14px; } .avatar .reel::after { width: 6px; height: 6px; }
-.pr-body { padding: 22px 24px 24px; }
-.pr-body h3 { overflow-wrap: anywhere; margin: 0 0 12px; font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
-.pr-body ul { margin: 0 0 20px; padding-left: 20px; color: var(--soft); }
-.pr-body li { margin: 4px 0; }
-.pr-body li code { color: var(--ink); font-size: .9em; }
-table.m { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; margin-bottom: 18px; }
-.m th, .m td { border: 1px solid var(--line); padding: 8px 12px; text-align: right; }
-.m th:first-child, .m td:first-child { text-align: left; }
-.m th { color: var(--dim); font-weight: 500; background: #0F1013; }
-.m .down { color: var(--lime); }
-.diffblock { font: 13px/1.7 var(--mono); background: #0F1013; border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; }
-.diffblock .minus { color: var(--coral); display: block; } .diffblock .plus { color: var(--lime); display: block; } .diffblock .same { color: var(--soft); display: block; }
-.scroll { overflow-x: auto; }
-
-/* spec */
-.spec { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--line); }
-@media (max-width: 760px) { .spec { grid-template-columns: 1fr; } }
-.spec > div { padding: 26px 32px 26px 0; border-bottom: 1px solid var(--line); }
-.spec > div:nth-child(even) { padding-left: 32px; padding-right: 0; border-left: 1px solid var(--line); }
-@media (max-width: 760px) { .spec > div:nth-child(even) { padding-left: 0; border-left: 0; } .spec > div { padding-right: 0; } }
-.spec h3 { font-size: 16.5px; font-weight: 600; margin: 0 0 6px; letter-spacing: -.01em; }
-.spec p { color: var(--dim); margin: 0; font-size: 15.5px; }
-.spec code { color: var(--soft); font-size: .88em; }
-.spec .limit h3 { color: var(--dim); }
+.checks { list-style: none; margin: 32px 0 0; padding: 0; font: 13.5px/1.6 var(--mono); }
+.checks li { padding: 10px 0; border-top: 1px dashed var(--rule); display: flex; gap: 12px; }
+.checks li::before { content: "[x]"; color: var(--green); }
 
 /* closing */
-.closing { margin-top: 140px; border-top: 1px solid var(--line); position: relative; overflow: hidden; }
-.closing::before { content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 50% 80% at 50% 0%, rgba(200, 240, 90, .07), transparent 70%); }
-.closing .wrap { padding-top: 96px; padding-bottom: 96px; text-align: center; position: relative; }
-.closing h2 { margin: 0 auto 14px; max-width: 16ch; }
-.closing .lead { margin: 0 auto 30px; }
-.closing .install { margin: 0 auto; text-align: left; }
-.closing .cta-row { justify-content: center; }
-footer { border-top: 1px solid var(--line); color: var(--dim); font-size: 14px; }
-footer .wrap { display: flex; justify-content: space-between; gap: 16px; padding-top: 26px; padding-bottom: 34px; flex-wrap: wrap; }
-footer a:hover { color: var(--ink); }
+.end { background: var(--dark); color: var(--paper); margin-top: 140px; padding: 110px 80px 120px; text-align: center; }
+@media (max-width: 900px) { .end { padding: 80px 20px; margin-top: 96px; } }
+.end h2 { color: var(--paper); margin-bottom: 14px; }
+.end p { color: #BDBAB2; margin: 0 0 34px; }
+.install { display: inline-flex; align-items: center; gap: 10px; background: #2A2A29; border-radius: 9px; padding: 6px 6px 6px 18px; max-width: 100%; }
+.install code { font: 14px var(--mono); color: var(--paper); white-space: nowrap; overflow-x: auto; min-width: 0; scrollbar-width: none; }
+.install .btn { background: var(--paper); color: var(--ink); padding: 10px 16px; }
+footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 26px 80px 34px; font: 13px var(--mono); color: var(--soft); }
+@media (max-width: 900px) { footer { padding: 26px 20px 34px; } }
 
-.rise { opacity: 0; transform: translateY(14px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
+.rise { opacity: 0; transform: translateY(16px); transition: opacity .9s var(--ease), transform .9s var(--ease); }
 .rise.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: 0s !important; animation: none !important; }
-  .rise { opacity: 1; transform: none; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .rise, .printing .ln { opacity: 1 !important; transform: none !important; }
+  html { scroll-behavior: auto; }
 }
 </style>
 </head>
 <body>
-
-<header class="nav" id="nav">
-  <div class="wrap">
-    <a class="logo" href="#top" aria-label="Tape home"><span class="reel" aria-hidden="true"></span>tape</a>
-    <nav class="links" aria-label="Main">
-      <a href="#demo" class="hide-sm">Demo</a>
-      <a href="#how" class="hide-sm">How it works</a>
-      <a href="report.html">Diff report</a>
-      <a class="gh" href="https://github.com/ahmadhalawanii/Tape"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.34c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.88.87 2.34.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
-    </nav>
-  </div>
+<a class="skip" href="#main">Skip to content</a>
+<header class="pill">
+  <nav aria-label="Main">
+    <a class="logo" href="#top" aria-label="Tape home"></a>
+    <a href="#receipt" class="hide-sm">THE $489 BUG</a>
+    <a href="#how">HOW IT WORKS</a>
+    <a href="report.html" class="hide-sm">REPORT</a>
+    <a class="gh" href="https://github.com/ahmadhalawanii/Tape">GITHUB</a>
+  </nav>
+  <div class="tick" aria-hidden="true"><span>RECORD · REPLAY · DIFF &nbsp;&nbsp;&nbsp; 0 API CALLS IN REPLAY &nbsp;&nbsp;&nbsp; CAUGHT AT CALL 00 &nbsp;&nbsp;&nbsp; RECORD · REPLAY · DIFF &nbsp;&nbsp;&nbsp; 0 API CALLS IN REPLAY &nbsp;&nbsp;&nbsp; CAUGHT AT CALL 00 &nbsp;&nbsp;&nbsp; RECORD · REPLAY · DIFF &nbsp;&nbsp;&nbsp; 0 API CALLS IN REPLAY &nbsp;&nbsp;&nbsp; CAUGHT AT CALL 00 &nbsp;&nbsp;&nbsp; RECORD · REPLAY · DIFF &nbsp;&nbsp;&nbsp; 0 API CALLS IN REPLAY &nbsp;&nbsp;&nbsp; CAUGHT AT CALL 00 &nbsp;&nbsp;&nbsp; </span></div>
 </header>
 
-<main id="top">
-  <section class="hero">
-    <div class="wrap">
-      <div class="hero-grid">
-        <h1>Your agent changed.<br><em>Tape noticed.</em></h1>
-        <div>
-          <p class="sub">Record every model and tool call once. Replay it in tests <b>for free</b>, and fail the build the moment your agent starts behaving differently.</p>
-          <div class="install">
-            <code id="cmd"><span>$ </span>pip install git+https://github.com/ahmadhalawanii/Tape</code>
-            <button class="copy" type="button" data-copy="cmd">Copy</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="demo" id="demo" aria-label="Interactive demo">
-        <div class="bar">
-          <div class="seg" role="group" aria-label="Prompt version">
-            <span class="thumb" aria-hidden="true"></span>
-            <button type="button" data-v="1" aria-pressed="true">Prompt v1</button>
-            <button type="button" data-v="2" aria-pressed="false">Prompt v2 · friendlier</button>
-          </div>
-          <button class="replay" type="button" id="replay"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v3h3"/></svg>Replay the run</button>
-        </div>
-        <div class="panes" id="panes">
-          <div class="pane">
-            <div class="label"><span>system prompt</span><span id="edits">original</span></div>
-            <div class="prompt">
-              <span class="line">You are the <span class="w"><span class="w-in">friendly&nbsp;</span></span>returns desk for Northwind Outdoor.</span>
-              <span class="line">&nbsp;</span>
-              <span class="line">1. Look up the order with lookup_order.</span>
-              <span class="line"><span class="rule">2. Always call check_policy before issue_refund.</span></span>
-              <span class="line">3. Keep replies short and warm.</span>
-            </div>
-          </div>
-          <div class="pane">
-            <div class="label"><span>agent run · replayed from tape</span><span>3 model calls</span></div>
-            <ol class="run" id="run">
-              <li class="step"><span>user: "refund my tent, N1002"</span></li>
-              <li class="step"><span>lookup_order(N1002)</span><small>$489 · delivered 64 days ago</small></li>
-              <li class="step" id="s-policy"><span>check_policy(N1002)</span><small>refused: 30-day window</small></li>
-              <li class="step ok" id="s-out"><span id="s-out-text">reply: store credit offered</span><small id="s-out-note">declined correctly</small></li>
-            </ol>
-          </div>
-        </div>
-        <div class="term" id="term" aria-live="polite"></div>
-      </div>
-      <div class="facts">
-        <span><span class="dot"></span><b>0 API calls</b> in replay</span>
-        <span><b>No API key</b> needed in CI</span>
-        <span><b>Caught at call 0</b>, before a single refund</span>
-      </div>
+<main id="main">
+<section class="hero" id="top">
+  <div class="l">
+    <p class="kick">RECORD, REPLAY AND DIFF FOR LLM AGENTS.</p>
+    <h1>Agents drift.<br>Tape keeps the receipts.</h1>
+    <p class="lede">Every model call and tool call your agent makes, recorded once to a tape. Tests replay it for free and fail on the first call that changes.</p>
+    <div class="btns">
+      <a class="btn" href="#install">GET STARTED<i></i></a>
+      <a class="btn o" href="#receipt">SEE THE $489 BUG</a>
     </div>
-  </section>
+    <p class="scroll">SCROLL TO PLAY</p>
+  </div>
+  <div class="r">
+    <svg viewBox="0 0 720 900" aria-hidden="true" focusable="false"><defs><path id="a0" d="M 230 330 m -150 0 a 150 150 0 1 1 300 0 a 150 150 0 1 1 -300 0"/><path id="a1" d="M 230 330 m -120 0 a 120 120 0 1 1 240 0 a 120 120 0 1 1 -240 0"/><path id="a2" d="M 230 330 m -92 0 a 92 92 0 1 1 184 0 a 92 92 0 1 1 -184 0"/><path id="a3" d="M 230 330 m -66 0 a 66 66 0 1 1 132 0 a 66 66 0 1 1 -132 0"/><path id="b0" d="M 500 610 m -150 0 a 150 150 0 1 1 300 0 a 150 150 0 1 1 -300 0"/><path id="b1" d="M 500 610 m -120 0 a 120 120 0 1 1 240 0 a 120 120 0 1 1 -240 0"/><path id="b2" d="M 500 610 m -92 0 a 92 92 0 1 1 184 0 a 92 92 0 1 1 -184 0"/><path id="b3" d="M 500 610 m -66 0 a 66 66 0 1 1 132 0 a 66 66 0 1 1 -132 0"/></defs>
+<g class="rings"><g class="reel" style="transform-origin:230px 330px"><text font-size="17" opacity="1"><textPath href="#a0" textLength="930" lengthAdjust="spacing">user · refund my tent N1002 · lookup_order · N1002 · $489 · check_policy · refused · </textPath></text><text font-size="15" opacity="0.8"><textPath href="#a1" textLength="742" lengthAdjust="spacing">system · you are the returns desk · always call check_policy · </textPath></text><text font-size="13" opacity="0.6"><textPath href="#a2" textLength="566" lengthAdjust="spacing">call 00 · call 01 · call 02 · replayed · </textPath></text><text font-size="11" opacity="0.45"><textPath href="#a3" textLength="403" lengthAdjust="spacing">tape · tape · tape · tape · tape · tape · </textPath></text></g><circle cx="230" cy="330" r="30" style="fill:var(--paper)"/><circle cx="230" cy="330" r="9" style="fill:var(--dark)"/><g class="reel" style="transform-origin:500px 610px"><text font-size="17" opacity="1"><textPath href="#b0" textLength="930" lengthAdjust="spacing">user · refund my tent N1002 · lookup_order · $489 · <tspan class="bug">issue_refund · $489 refunded · </tspan></textPath></text><text font-size="15" opacity="0.8"><textPath href="#b1" textLength="742" lengthAdjust="spacing">system · you are the friendly returns desk · keep it warm · </textPath></text><text font-size="13" opacity="0.6"><textPath href="#b2" textLength="566" lengthAdjust="spacing">diverged · call 00 · diverged · call 00 · </textPath></text><text font-size="11" opacity="0.45"><textPath href="#b3" textLength="403" lengthAdjust="spacing">tape · tape · tape · tape · tape · tape · </textPath></text></g><circle cx="500" cy="610" r="30" style="fill:var(--paper)"/><circle cx="500" cy="610" r="9" style="fill:var(--dark)"/></g>
+<line x1="350" y1="420" x2="380" y2="520" style="stroke:var(--paper)" stroke-width="1" stroke-dasharray="2 4" opacity=".6"/></svg>
+    <p class="cap"><b>SIDE A</b> PROMPT V1 &nbsp;·&nbsp; <b>SIDE B</b> PROMPT V2, FRIENDLIER</p>
+  </div>
+</section>
 
-  <section class="sec" id="how">
-    <div class="wrap">
-      <h2>Record once. Replay on every commit.</h2>
-      <p class="lead">Tape patches the Anthropic SDK while your test runs. Nothing in your agent changes, and no client needs passing in.</p>
-      <div class="flow rise">
-        <div><span class="tick"></span>
-          <h3>Record</h3>
-          <p>The first run calls Claude for real and saves each request, response and tool result to a JSON tape.</p>
-<pre><span class="c"># first run, or LLMTAPE_MODE=record</span>
+<section class="s split" id="receipt">
+  <div class="rise">
+    <h2>One friendlier line.<br>One $489 refund.</h2>
+    <p class="sub">A returns agent's prompt was rewritten to sound warmer, and the rewrite dropped a single rule: always check the refund policy first. Every reply still read fine. The replay test failed on the first call.</p>
+    <div class="big" aria-label="$489"><small>$</small><span id="count">489</span></div>
+  </div>
+  <pre class="rc printing" id="rc" aria-label="Replay receipt: check_policy skipped, issue_refund 489 dollars, caught by Tape at call 0"><span class="ln"><span class="d">+-----------------------------------------------+</span></span><span class="ln"><span class="d">|</span>  REPLAY RECEIPT                    PROMPT V2  <span class="d">|</span></span><span class="ln"><span class="d">+-----------------------------------------------+</span></span><span class="ln"><span class="d">|</span>                                               <span class="d">|</span></span><span class="ln"><span class="d">|</span>  CALL 00                                      <span class="d">|</span></span><span class="ln"><span class="d">|</span>  USER: REFUND MY TENT <span class="d">................</span> N1002  <span class="d">|</span></span><span class="ln"><span class="d">|</span>  LOOKUP_ORDER <span class="d">.........................</span> $489  <span class="d">|</span></span><span class="ln"><span class="d">|</span>                                               <span class="d">|</span></span><span class="ln"><span class="d">|</span>  CALL 01                                      <span class="d">|</span></span><span class="ln"><span class="d">|</span>  CHECK_POLICY <span class="d">......................</span> <span class="x">SKIPPED</span>  <span class="d">|</span></span><span class="ln"><span class="d">|</span>                                               <span class="d">|</span></span><span class="ln"><span class="d">|</span>  CALL 02                                      <span class="d">|</span></span><span class="ln"><span class="d">|</span>  <span class="hl">ISSUE_REFUND ...................... $489.00</span>  <span class="d">|</span></span><span class="ln"><span class="d">|</span>                                               <span class="d">|</span></span><span class="ln"><span class="d">+-----------------------------------------------+</span></span><span class="ln"><span class="d">|</span>  TOTAL REFUNDED <span class="d">....................</span> <span class="x">$489.00</span>  <span class="d">|</span></span><span class="ln"><span class="d">|</span>  POLICY WINDOW <span class="d">.....................</span> 30 DAYS  <span class="d">|</span></span><span class="ln"><span class="d">|</span>  DAYS SINCE DELIVERY <span class="d">....................</span> 64  <span class="d">|</span></span><span class="ln"><span class="d">+-----------------------------------------------+</span></span><span class="ln"><span class="d">|</span>  CAUGHT BY TAPE AT CALL 00. 0 API CALLS.      <span class="d">|</span></span><span class="ln"><span class="d">+-----------------------------------------------+</span></span></pre>
+</section>
+
+<section class="band" id="how">
+  <h2>Record once. Replay on every commit.</h2>
+  <p class="sub">Tape patches the Anthropic SDK while your tests run. Nothing in your agent changes.</p>
+  <div class="steps rise">
+    <div><span class="n">SIDE 1</span><h3>Record</h3><p>The first run calls Claude for real and writes every request, response and tool result to a JSON tape.</p>
+<pre><span class="c"># first run</span>
 pytest
-<span class="c"># -&gt; tests/tapes/test_refund/....json</span></pre>
-        </div>
-        <div><span class="tick"></span>
-          <h3>Replay</h3>
-          <p>Every later run answers from the tape. It's fast, free and the same every time, and tools don't need your database.</p>
+<span class="c"># tests/tapes/test_refund/....json</span></pre></div>
+    <div><span class="n">SIDE 2</span><h3>Replay</h3><p>Every later run answers from the tape: fast, free and identical, with tool results replayed too.</p>
 <pre>pytest --tape-mode=replay
-<span class="c"># 0 API calls, no key needed</span></pre>
-        </div>
-        <div><span class="tick"></span>
-          <h3>Diff</h3>
-          <p>When a request no longer matches, the test fails at that call and Tape shows what the agent now does.</p>
-<pre>tape diff tests/tapes/x.json --git main
-<span class="r">- check_policy(N1002)</span>
-<span class="s">+ issue_refund(N1002, 489)</span></pre>
-        </div>
-      </div>
+<span class="g"># 0 API calls, no key needed</span></pre></div>
+    <div><span class="n">SIDE 3</span><h3>Diff</h3><p>When a request stops matching, the test fails at that call and Tape shows what the agent does now.</p>
+<pre>tape diff x.json --git main
+<span class="x">- check_policy(N1002)</span>
+<span class="g">+ issue_refund(N1002, 489)</span></pre></div>
+  </div>
+</section>
+
+<section class="s split">
+  <div class="rise">
+    <h2>Test what it does, not what it says.</h2>
+    <p class="sub">Assertions read the tape, and a failure prints the agent's whole tool trajectory.</p>
+    <ul class="checks">
+      <li>assert_called("check_policy", order_id="N1002")</li>
+      <li>assert_called_before("check_policy", "issue_refund")</li>
+      <li>assert_not_called("issue_refund")</li>
+      <li>assert_cost_below(0.01)</li>
+    </ul>
+  </div>
+  <div class="rise">
+    <div class="tabs" role="tablist" aria-label="Example">
+      <button role="tab" id="tab1" aria-controls="p1" aria-selected="true">test_refund_desk.py</button>
+      <button role="tab" id="tab2" aria-controls="p2" aria-selected="false">after the prompt change</button>
     </div>
-  </section>
+<pre class="code" id="p1" role="tabpanel" aria-labelledby="tab1"><span class="k">def</span> test_declines_an_order_outside_the_window(client, tape):
+    RefundDesk(client).handle(
+        <span class="s">"I'd like a refund for my tent, order N1002."</span>)
 
-  <section class="sec">
-    <div class="wrap split">
-      <div class="rise">
-        <h2>Test what the agent does, not what it says.</h2>
-        <p class="lead" style="margin-bottom:28px">Each assertion fails with the whole tool trajectory, so you see what happened instead of a bare <code>False</code>.</p>
-        <ul class="checks">
-          <li><span><code>assert_called</code> with a subset of arguments</span></li>
-          <li><span><code>assert_called_before("check_policy", "issue_refund")</code></span></li>
-          <li><span><code>assert_not_called</code>, <code>assert_order</code>, <code>assert_max_calls</code></span></li>
-          <li><span><code>assert_cost_below(0.01)</code> from real token usage</span></li>
-        </ul>
-      </div>
-      <div class="editor rise">
-        <div class="tabs" role="tablist">
-          <button role="tab" aria-selected="true" aria-controls="t1" id="tab1">test_refund_desk.py</button>
-          <button role="tab" aria-selected="false" aria-controls="t2" id="tab2">after the prompt change</button>
-        </div>
-<pre id="t1" role="tabpanel" aria-labelledby="tab1"><span class="ln">1</span><span class="k">def</span> test_declines_an_order_outside_the_window(client, tape):
-<span class="ln">2</span>    RefundDesk(client).handle(
-<span class="ln">3</span>        <span class="s">"I'd like a refund for my tent, order N1002."</span>)
-<span class="ln">4</span>
-<span class="ln">5</span>    tape.assert_called(<span class="s">"check_policy"</span>, order_id=<span class="s">"N1002"</span>)
-<span class="ln">6</span>    tape.assert_not_called(<span class="s">"issue_refund"</span>)
-<span class="ln">7</span>    tape.assert_text_contains(<span class="s">"store credit"</span>)</pre>
-<pre id="t2" role="tabpanel" aria-labelledby="tab2" hidden><span class="r">FAILED</span> test_declines_an_order_outside_the_window
+    tape.assert_called(<span class="s">"check_policy"</span>, order_id=<span class="s">"N1002"</span>)
+    tape.assert_not_called(<span class="s">"issue_refund"</span>)
+    tape.assert_text_contains(<span class="s">"store credit"</span>)</pre>
+<pre class="code" id="p2" role="tabpanel" aria-labelledby="tab2" hidden><span class="x">FAILED</span> test_declines_an_order_outside_the_window
 
-<span class="r">TapeDivergence</span>: Run diverged from tapes/test_refund_desk/
-  test_declines_an_order_outside_the_window.json at model call #0.
+<span class="x">TapeDivergence</span>: Run diverged at model call #0.
 Request differs from the recording:
-  system: <span class="s">"You are the returns desk for Northwind…"</span>
-       -&gt; <span class="r">"You are the friendly returns desk for…"</span>
+  system: <span class="s">"You are the returns desk for…"</span>
+       -&gt; <span class="x">"You are the friendly returns desk…"</span>
 
-<span class="c">If the change is intended, re-record with LLMTAPE_MODE=update:
-it replays the matching prefix and calls the API only from here.</span></pre>
-      </div>
-    </div>
-  </section>
+<span class="c">If the change is intended, re-record with
+LLMTAPE_MODE=update.</span></pre>
+  </div>
+</section>
 
-  <section class="sec">
-    <div class="wrap split">
-      <div class="rise">
-        <h2>Behaviour changes, in the pull request.</h2>
-        <p class="lead">The CI workflow replays every test, then writes a behaviour diff for each tape the pull request changed. A reviewer sees "now calls issue_refund" next to the prompt edit that caused it.</p>
-      </div>
-      <div class="pr rise">
-        <div class="pr-head"><span class="avatar"><span class="reel"></span></span><b>tape diff</b> commented on the job summary</div>
-        <div class="pr-body">
-          <h3>Agent behaviour changed: <code>test_declines_an_order_outside_the_window.json</code></h3>
-          <ul>
-            <li>no longer calls <code>check_policy({"order_id": "N1002"})</code></li>
-            <li>now calls <code>issue_refund({"order_id": "N1002", "amount": 489})</code></li>
-            <li>final reply changed</li>
-          </ul>
-          <div class="scroll"><table class="m">
-            <thead><tr><th></th><th>before</th><th>after</th><th>change</th></tr></thead>
-            <tbody>
-              <tr><td>model calls</td><td>3</td><td>3</td><td>0</td></tr>
-              <tr><td>input tokens</td><td>1,215</td><td>1,014</td><td class="down">-201</td></tr>
-              <tr><td>cost</td><td>$0.00018</td><td>$0.00015</td><td class="down">-$0.00003</td></tr>
-            </tbody>
-          </table></div>
-          <div class="diffblock"><span class="same">  lookup_order({"order_id": "N1002"})</span><span class="minus">- check_policy({"order_id": "N1002"})</span><span class="plus">+ issue_refund({"order_id": "N1002", "amount": 489})</span></div>
-        </div>
-      </div>
-    </div>
-  </section>
+<section class="s split">
+  <div class="rise">
+    <h2>Small library. Itemised.</h2>
+    <p class="sub">Everything on this receipt is in the repo, with tests. The limits are on it too.</p>
+  </div>
+  <pre class="rc rise" aria-label="What Tape records, replays and protects, and its current limits"><span class="ln"><span class="d">+-----------------------------------------------+</span></span><span class="ln"><span class="d">|</span>  WHAT'S ON THE TAPE                   v0.1.0  <span class="d">|</span></span><span class="ln"><span class="d">+-----------------------------------------------+</span></span><span class="ln"><span class="d">|</span>                                               <span class="d">|</span></span><span class="ln"><span class="d">|</span>  RECORDS                                      <span class="d">|</span></span><span class="ln"><span class="d">|</span>  messages.create, sync + async <span class="d">.........</span> YES  <span class="d">|</span></span><span class="ln"><span class="d">|</span>  beta.messages <span class="d">.........................</span> YES  <span class="d">|</span></span><span class="ln"><span class="d">|</span>  @llmtape.tool results + errors <span class="d">........</span> YES  <span class="d">|</span></span><span class="ln"><span class="d">|</span>                                               <span class="d">|</span></span><span class="ln"><span class="d">|</span>  REPLAYS                                      <span class="d">|</span></span><span class="ln"><span class="d">|</span>  API calls in replay <span class="d">.....................</span> 0  <span class="d">|</span></span><span class="ln"><span class="d">|</span>  API key needed in CI <span class="d">...................</span> NO  <span class="d">|</span></span><span class="ln"><span class="d">|</span>  update mode: pays from first diff <span class="d">.....</span> YES  <span class="d">|</span></span><span class="ln"><span class="d">|</span>                                               <span class="d">|</span></span><span class="ln"><span class="d">|</span>  PROTECTS                                     <span class="d">|</span></span><span class="ln"><span class="d">|</span>  swallowed by except Exception <span class="d">.......</span> NEVER  <span class="d">|</span></span><span class="ln"><span class="d">|</span>  API keys written to tapes <span class="d">...........</span> NEVER  <span class="d">|</span></span><span class="ln"><span class="d">|</span>                                               <span class="d">|</span></span><span class="ln"><span class="d">|</span>  LIMITS                                       <span class="d">|</span></span><span class="ln"><span class="d">|</span>  providers <span class="d">.......................</span> ANTHROPIC  <span class="d">|</span></span><span class="ln"><span class="d">|</span>  streaming <span class="d">.........................</span> NOT YET  <span class="d">|</span></span><span class="ln"><span class="d">+-----------------------------------------------+</span></span><span class="ln"><span class="d">|</span>  pip install git+https://github.com/...       <span class="d">|</span></span><span class="ln"><span class="d">+-----------------------------------------------+</span></span></pre>
+</section>
 
-  <section class="sec">
-    <div class="wrap">
-      <h2>Small library. <em>Sharp edges handled.</em></h2>
-      <p class="lead">Everything here is in the repo, with tests.</p>
-      <div class="spec rise">
-        <div><h3>Update mode</h3><p>Replays while requests match and calls the API only from the first difference, so re-recording pays for the part that changed.</p></div>
-        <div><h3>Tools on tape</h3><p>Wrap a function in <code>@llmtape.tool</code> and replay returns its recorded result, errors included.</p></div>
-        <div><h3>Can't be swallowed</h3><p>A divergence is a <code>BaseException</code>, so an agent's <code>except Exception:</code> fallback can't hide it.</p></div>
-        <div><h3>Keys never saved</h3><p>Anthropic, OpenAI, AWS, GitHub, Stripe and Slack keys are redacted before a tape is written.</p></div>
-        <div><h3>Diffs you can read</h3><p>Text, markdown, JSON or a single offline HTML page. <a href="report.html" style="color:var(--ink);border-bottom:1px solid var(--line-2)">See the demo report</a>.</p></div>
-        <div class="limit"><h3>Limits, honestly</h3><p>Anthropic SDK only for now, and streaming isn't recorded yet. The demo uses a scripted stand-in model so it runs without a key.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="closing">
-    <div class="wrap">
-      <h2>Put your agent on tape.</h2>
-      <p class="lead">Python 3.10+, the Anthropic SDK, and pytest. MIT licensed.</p>
-      <div class="install">
-        <code id="cmd2"><span>$ </span>pip install git+https://github.com/ahmadhalawanii/Tape</code>
-        <button class="copy" type="button" data-copy="cmd2">Copy</button>
-      </div>
-      <div class="cta-row"><a href="https://github.com/ahmadhalawanii/Tape#readme">Read the docs</a><a href="https://github.com/ahmadhalawanii/Tape">Star on GitHub</a></div>
-    </div>
-  </section>
+<section class="end" id="install">
+  <h2>Put your agent on tape.</h2>
+  <p>Python 3.10+, the Anthropic SDK and pytest. MIT licensed.</p>
+  <div class="install"><code id="cmd">pip install git+https://github.com/ahmadhalawanii/Tape</code><button class="btn" type="button" id="copy">COPY</button></div>
+</section>
 </main>
 
-<footer>
-  <div class="wrap">
-    <span>Built by Ahmad Halawani</span>
-    <a href="https://github.com/ahmadhalawanii/Tape">github.com/ahmadhalawanii/Tape</a>
-  </div>
-</footer>
+<footer><span>BUILT BY AHMAD HALAWANI</span><a href="https://github.com/ahmadhalawanii/Tape">GITHUB.COM/AHMADHALAWANII/TAPE</a></footer>
 
 <script>
 (function () {
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const $ = s => document.querySelector(s);
 
-  // copy buttons
-  document.querySelectorAll("[data-copy]").forEach(btn => btn.addEventListener("click", async () => {
-    const text = $("#" + btn.dataset.copy).textContent.replace(/^\$ /, "");
-    try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; }
-    catch (e) { btn.textContent = "Select it"; }
-    setTimeout(() => (btn.textContent = "Copy"), 1600);
-  }));
+  document.getElementById("copy").addEventListener("click", async e => {
+    try { await navigator.clipboard.writeText(document.getElementById("cmd").textContent); e.target.textContent = "COPIED"; }
+    catch (_) { e.target.textContent = "SELECT IT"; }
+    setTimeout(() => (e.target.textContent = "COPY"), 1600);
+  });
 
-  // nav border on scroll
-  const nav = $("#nav");
-  addEventListener("scroll", () => nav.classList.toggle("scrolled", scrollY > 8), { passive: true });
-
-  // ---- the demo ----
-  const demo = $("#demo"), seg = demo.querySelector(".seg"), thumb = seg.querySelector(".thumb");
-  const buttons = [...seg.querySelectorAll("button")];
-  const steps = [...demo.querySelectorAll(".step")];
-  const policy = $("#s-policy"), out = $("#s-out"), outText = $("#s-out-text"), outNote = $("#s-out-note");
-  const term = $("#term"), edits = $("#edits");
-  let version = 1, timers = [];
-
-  function placeThumb() {
-    const b = buttons[version - 1];
-    thumb.style.left = b.offsetLeft + "px"; thumb.style.width = b.offsetWidth + "px";
-  }
-  function setTerm(v) {
-    term.replaceChildren();
-    const badge = document.createElement("span");
-    const name = document.createElement("span");
-    name.className = "t"; name.textContent = "test_declines_an_order_outside_the_window";
-    if (v === 1) {
-      badge.className = "badge pass"; badge.textContent = "PASSED";
-      const note = document.createElement("div");
-      note.textContent = "replayed from tape · check_policy called before any refund";
-      term.append(badge, name, note);
-    } else {
-      badge.className = "badge fail"; badge.textContent = "FAILED";
-      const err = document.createElement("div");
-      const e = document.createElement("span"); e.className = "e"; e.textContent = "TapeDivergence: ";
-      err.append(e, "run diverged at model call #0 · system prompt changed");
-      term.append(badge, name, err);
-    }
-  }
-  function render(v, animate) {
-    timers.forEach(clearTimeout); timers = [];
-    version = v;
-    buttons.forEach((b, i) => b.setAttribute("aria-pressed", String(i === v - 1)));
-    placeThumb();
-    demo.classList.toggle("v2", v === 2);
-    edits.textContent = v === 2 ? "edited: 1 word added, 1 rule removed" : "original";
-    const finish = () => {
-      policy.className = "step" + (v === 2 ? " ghost" : "");
-      policy.querySelector("small").textContent = v === 2 ? "skipped" : "refused: 30-day window";
-      out.className = "step " + (v === 2 ? "bad" : "ok");
-      outText.textContent = v === 2 ? "issue_refund(N1002, 489)" : "reply: store credit offered";
-      outNote.textContent = v === 2 ? "outside the 30-day window" : "declined correctly";
-    };
-    if (!animate || reduce) { finish(); steps.forEach(s => s.classList.remove("pending")); setTerm(v); return; }
-    term.replaceChildren(); term.textContent = "replaying…";
-    steps.forEach(s => s.classList.add("pending"));
-    timers.push(setTimeout(finish, 120));
-    steps.forEach((s, i) => timers.push(setTimeout(() => s.classList.remove("pending"), 450 + i * 380)));
-    timers.push(setTimeout(() => setTerm(v), 450 + steps.length * 380 + 150));
-  }
-  buttons.forEach((b, i) => b.addEventListener("click", () => render(i + 1, true)));
-  $("#replay").addEventListener("click", () => render(version, true));
-  addEventListener("resize", placeThumb);
-  document.fonts.ready.then(placeThumb);
-  render(1, false);
-
-  // play the change once, when the demo first comes into view
-  let played = false;
-  new IntersectionObserver(([e], obs) => {
-    if (e.isIntersecting && !played) { played = true; obs.disconnect(); setTimeout(() => render(2, true), reduce ? 0 : 900); }
-  }, { threshold: .55 }).observe(demo);
-
-  // editor tabs
   const tabs = [...document.querySelectorAll('[role="tab"]')];
   tabs.forEach(t => t.addEventListener("click", () => tabs.forEach(o => {
     const on = o === t; o.setAttribute("aria-selected", String(on));
     document.getElementById(o.getAttribute("aria-controls")).hidden = !on;
   })));
 
-  // reveal on scroll
-  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .15 });
-  document.querySelectorAll(".rise").forEach(el => io.observe(el));
+  const once = (el, fn, threshold = .25) => new IntersectionObserver(([e], obs) => {
+    if (e.isIntersecting) { obs.disconnect(); fn(); }
+  }, { threshold }).observe(el);
+
+  document.querySelectorAll(".rise").forEach(el => once(el, () => el.classList.add("in"), .15));
+
+  // the receipt prints line by line, and the total counts up beside it
+  const rc = document.getElementById("rc"), lines = [...rc.querySelectorAll(".ln")], count = document.getElementById("count");
+  if (reduce) { lines.forEach(l => l.classList.add("on")); }
+  else {
+    count.textContent = "0";
+    once(rc, () => {
+      lines.forEach((l, i) => setTimeout(() => l.classList.add("on"), i * 70));
+      const start = performance.now(), dur = lines.length * 70;
+      const step = t => { const k = Math.min(1, (t - start) / dur); count.textContent = Math.round(489 * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    });
+  }
 })();
 </script>
 </body>

@@ -7,13 +7,13 @@
 <style>
 /* Offline by design: Geist is used when installed, system faces otherwise. Matches the Tape site. */
 :root {
-  --bg: #0B0C0E; --panel: #121317; --ink: #EDEEF0; --muted: #8B8F98; --line: #24262D;
-  --add: #C8F05A; --add-bg: rgba(200, 240, 90, .09); --del: #FF6B57; --del-bg: rgba(255, 107, 87, .09);
-  --chg: #F5C350; --chg-bg: rgba(245, 195, 80, .09); --accent: #C8F05A; --tool-bg: #17181D; --spine: #2F323A;
-  --orange: #FF6B57; --black: #0B0C0E;
+  --bg: #F1EEE7; --panel: #FBFAF6; --ink: #232323; --muted: #5E5B55; --line: #DAD5CB;
+  --add: #2E7D4F; --add-bg: rgba(46, 125, 79, .1); --del: #E5432B; --del-bg: rgba(229, 67, 43, .09);
+  --chg: #A26A0B; --chg-bg: rgba(214, 150, 30, .14); --accent: #FF6A1A; --tool-bg: #ECE8DF; --spine: #CFC9BE;
+  --orange: #FF6A1A; --black: #232323;
   --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color-scheme: dark;
+  color-scheme: light;
 }
 * { box-sizing: border-box; }
 ::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
@@ -26,12 +26,12 @@ a { color: var(--accent); text-underline-offset: 3px; }
 main { max-width: 1240px; margin: 0 auto; padding: 32px 16px 80px; }
 header.band + main { padding-top: 32px; }
 
-header.band { border-bottom: 1px solid var(--line); }
+header.band { background: #1E1E1E; color: #F1EEE7; }
 header.band .in { max-width: 1240px; margin: 0 auto; padding: 18px 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .mark { display: flex; align-items: center; gap: 9px; font: 600 17px/1 var(--sans); letter-spacing: -.01em; }
-.mark::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--add);
-  background: radial-gradient(circle, var(--add) 0 3px, transparent 3.5px); }
-header.band .sub { color: var(--muted); font: 13px var(--mono); overflow-wrap: anywhere; }
+.mark::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #F1EEE7;
+  background: radial-gradient(circle, #F1EEE7 0 3px, transparent 3.5px); }
+header.band .sub { color: #BDBAB2; font: 13px var(--mono); overflow-wrap: anywhere; }
 .sub { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
 h2 { font-size: 17px; font-weight: 650; margin: 44px 0 14px; letter-spacing: -0.01em; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; }
