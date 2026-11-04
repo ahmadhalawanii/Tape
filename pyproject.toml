@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "llmtape"
+version = "0.1.0"
+description = "Record, replay and diff LLM agent runs. Deterministic, zero-cost agent tests."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Ahmad Halawani" }]
+keywords = ["llm", "agents", "testing", "anthropic", "claude", "replay", "pytest"]
+classifiers = [
+  "Framework :: Pytest",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Testing",
+  "Programming Language :: Python :: 3",
+]
+dependencies = ["anthropic>=1.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.urls]
+Homepage = "https://github.com/ahmadhalawanii/tape"
+
+[project.scripts]
+tape = "llmtape.cli:main"
+
+[project.entry-points.pytest11]
+llmtape = "llmtape.pytest_plugin"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/llmtape"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "examples"]
+addopts = "-p no:cacheprovider"
