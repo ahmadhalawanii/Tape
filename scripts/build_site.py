@@ -44,7 +44,7 @@ def receipt(lines):
 
 
 REFUND = receipt([
-    "-", ("REPLAY RECEIPT".ljust(W - 4 - 9) + "PROMPT V2",), "-", "",
+    "-", ("REPLAY RECEIPT".ljust(W - 4 - 9) + "PROMPT V2",), ("DEMO · SAMPLE DATA · SCRIPTED MODEL",), "-", "",
     ("CALL 00",), ("USER: REFUND MY TENT", "N1002"), ("LOOKUP_ORDER", "$489"), "",
     ("CALL 01",), ("CHECK_POLICY", "SKIPPED", "x"), "",
     ("CALL 02",), ("ISSUE_REFUND", "$489.00", "hl"), "", "-",
@@ -57,7 +57,7 @@ SPEC = receipt([
     ("RECORDS",), ("messages.create, sync + async", "YES"), ("beta.messages", "YES"), ("@llmtape.tool results + errors", "YES"), "",
     ("REPLAYS",), ("API calls in replay", "0"), ("API key needed in CI", "NO"), ("update mode: pays from first diff", "YES"), "",
     ("PROTECTS",), ("swallowed by except Exception", "NEVER"), ("API keys written to tapes", "NEVER"), "",
-    ("LIMITS",), ("providers", "ANTHROPIC"), ("streaming", "NOT YET"), "-",
+    ("LIMITS",), ("providers", "ANTHROPIC"), ("streaming", "NOT YET"), ("demo model", "SCRIPTED"), "-",
     ("pip install git+https://github.com/...",), "-",
 ])
 
@@ -152,6 +152,7 @@ a { color: inherit; }
 .hero { display: grid; grid-template-columns: 1fr 1fr; min-height: 100svh; }
 .hero .l { padding: 120px 80px 48px; display: flex; flex-direction: column; justify-content: center; position: relative; }
 .kick { font: 500 14.5px var(--mono); margin: 0 0 22px; }
+.kick.demo { display: inline-block; font-size: 12.5px; letter-spacing: .04em; border: 1px dashed var(--rule); border-radius: 5px; padding: 5px 9px; color: var(--soft); }
 h1 { font: 500 clamp(2.4rem, 3.8vw, 3.4rem)/1.06 var(--sans); letter-spacing: -.03em; margin: 0 0 28px; }
 .lede { color: var(--soft); font-size: 17px; max-width: 44ch; margin: 0 0 32px; }
 .btns { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -249,7 +250,7 @@ footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wr
 <header class="pill">
   <nav aria-label="Main">
     <a class="logo" href="#top" aria-label="Tape home"></a>
-    <a href="#receipt" class="hide-sm">THE $489 BUG</a>
+    <a href="#receipt" class="hide-sm">DEMO</a>
     <a href="#how">HOW IT WORKS</a>
     <a href="report.html" class="hide-sm">REPORT</a>
     <a class="gh" href="https://github.com/ahmadhalawanii/Tape">GITHUB</a>
@@ -265,7 +266,7 @@ footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wr
     <p class="lede">Every model call and tool call your agent makes, recorded once to a tape. Tests replay it for free and fail on the first call that changes.</p>
     <div class="btns">
       <a class="btn" href="#install">GET STARTED<i></i></a>
-      <a class="btn o" href="#receipt">SEE THE $489 BUG</a>
+      <a class="btn o" href="#receipt">SEE THE DEMO</a>
     </div>
     <p class="scroll">SCROLL TO PLAY</p>
   </div>
@@ -277,8 +278,9 @@ footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wr
 
 <section class="s split" id="receipt">
   <div class="rise">
+    <p class="kick demo">DEMO SCENARIO · THE EXAMPLE AGENT IN THIS REPO</p>
     <h2>One friendlier line.<br>One $489 refund.</h2>
-    <p class="sub">A returns agent's prompt was rewritten to sound warmer, and the rewrite dropped a single rule: always check the refund policy first. Every reply still read fine. The replay test failed on the first call.</p>
+    <p class="sub">In the sample returns agent that ships with Tape, the prompt is rewritten to sound warmer, and the rewrite drops a single rule: always check the refund policy first. Every reply still reads fine. The replay test fails on the first call. The shop, order and model are made up for the demo; the test run and the diff are real Tape output.</p>
     <div class="big" aria-label="$489"><small>$</small><span id="count">489</span></div>
   </div>
   <pre class="rc" id="rc" aria-label="Replay receipt: check_policy skipped, issue_refund 489 dollars, caught by Tape at call 0">__REFUND__</pre>

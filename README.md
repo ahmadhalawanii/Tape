@@ -19,7 +19,8 @@ shows what the agent now does differently.
 
 ![A Tape diff: a prompt rewrite makes the agent skip the policy check and refund $489](docs/screenshot.png)
 
-The diff page above comes from the example in this repo. A support agent's system prompt was
+The diff page above comes from the demo in this repo: a sample support agent for a made-up shop,
+run against a scripted stand-in model. The agent's system prompt was
 rewritten to sound friendlier, and the rewrite dropped one line: "always call check_policy
 before issue_refund". Every response still read fine. Tape's replay test failed on the
 first model call, and the diff shows the agent now refunds a $489 tent that is outside the
