@@ -37,7 +37,7 @@ def main() -> None:
         path = DOCS / "demo" / f"{label}.json"
         with llmtape.use(path, "record", meta={"prompt": label, "recorded_against": source}) as run:
             RefundDesk(client, system=system).handle(ENQUIRY)
-        tapes.append(run.tape)
+        tapes.append(run)
 
     diff = llmtape.diff_tapes(*tapes)
     (DOCS / "index.html").write_text(report.render(diff=diff, title="Tape: a prompt edit that refunds $489"),

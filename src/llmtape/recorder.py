@@ -25,7 +25,7 @@ import time
 from pathlib import Path
 from typing import Any, Iterable
 
-from .normalize import Change, Scrubber, fingerprint, json_diff, normalize_request, to_jsonable
+from .normalize import Change, Scrubber, fingerprint, json_diff, normalize_request, redact, to_jsonable
 from .tape import Tape
 
 MODES = ("record", "replay", "auto", "update")
@@ -85,12 +85,10 @@ class Cassette:
 
     # ---- context --------------------------------------------------------------------
 
-    def __enter__(self) -> "Cassette":
+    def __enter__(self) -> Tape:
+        """Returns the live tape of this run, for assertions."""
         _push(self)
-        return self
-
-    async def __aenter__(self) -> "Cassette":
-        return self.__enter__()
+        return self.tape
 
     def __exit__(self, exc_type, exc, tb) -> None:
         _pop(self)
@@ -108,15 +106,6 @@ class Cassette:
         if self.mode in ("record", "update"):
             self.tape.meta.setdefault("mode", self.mode)
             self.tape.save(self.path)
-
-    async def __aexit__(self, exc_type, exc, tb) -> None:
-        self.__exit__(exc_type, exc, tb)
-
-    # Assertions read what *this* run did.
-    def __getattr__(self, name: str) -> Any:
-        if name.startswith(("assert_", "tool_", "final_", "model_", "usage", "cost", "summary", "latency")):
-            return getattr(self.tape, name)
-        raise AttributeError(name)
 
     # ---- model calls ----------------------------------------------------------------
 
@@ -153,7 +142,7 @@ class Cassette:
             "endpoint": endpoint,
             "fingerprint": fingerprint(request),
             "request": request,
-            "response": to_jsonable(response),
+            "response": redact(to_jsonable(response)),
             "latency_ms": latency_ms,
         })
 
@@ -181,9 +170,9 @@ class Cassette:
     def _record_tool(self, name: str, tool_input: dict, output: Any, error: BaseException | None) -> None:
         event = {"kind": "tool", "name": name, "input": tool_input}
         if error is None:
-            event["output"] = to_jsonable(output)
+            event["output"] = redact(to_jsonable(output))
         else:
-            event["error"] = {"type": type(error).__name__, "message": str(error)}
+            event["error"] = {"type": type(error).__name__, "message": redact(str(error))}
         self.tape.events.append(event)
 
 
@@ -284,16 +273,24 @@ def _uninstall() -> None:
     _originals.clear()
 
 
+def _replay(endpoint: str, kwargs: dict):
+    """(cassette, request, response to return or None). No cassette means pass through."""
+    cassette = active()
+    if cassette is None:
+        return None, None, None
+    request, event = cassette._next_model(endpoint, kwargs)
+    if event is None:
+        return cassette, request, None
+    cassette.tape.events.append(event)
+    return cassette, request, _response_type(endpoint).model_validate(event["response"])
+
+
 def _sync_wrapper(original, endpoint: str):
     def create(self, *args, **kwargs):
         __tracebackhide__ = True
-        cassette = active()
-        if cassette is None:
-            return original(self, *args, **kwargs)
-        request, replay = cassette._next_model(endpoint, kwargs)
-        if replay is not None:
-            cassette.tape.events.append(replay)
-            return _response_type(endpoint).model_validate(replay["response"])
+        cassette, request, replayed = _replay(endpoint, kwargs)
+        if cassette is None or replayed is not None:
+            return replayed if cassette else original(self, *args, **kwargs)
         started = time.monotonic()
         response = original(self, *args, **kwargs)
         cassette._record_model(endpoint, request, response, int((time.monotonic() - started) * 1000))
@@ -306,13 +303,9 @@ def _sync_wrapper(original, endpoint: str):
 def _async_wrapper(original, endpoint: str):
     async def create(self, *args, **kwargs):
         __tracebackhide__ = True
-        cassette = active()
-        if cassette is None:
-            return await original(self, *args, **kwargs)
-        request, replay = cassette._next_model(endpoint, kwargs)
-        if replay is not None:
-            cassette.tape.events.append(replay)
-            return _response_type(endpoint).model_validate(replay["response"])
+        cassette, request, replayed = _replay(endpoint, kwargs)
+        if cassette is None or replayed is not None:
+            return replayed if cassette else await original(self, *args, **kwargs)
         started = time.monotonic()
         response = await original(self, *args, **kwargs)
         cassette._record_model(endpoint, request, response, int((time.monotonic() - started) * 1000))

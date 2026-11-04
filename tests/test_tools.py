@@ -42,7 +42,7 @@ def test_tool_errors_are_recorded_and_raised_on_replay(tmp_path):
     with pytest.raises(ValueError):
         with llmtape.use(path, "record") as run:
             boom(3)
-    run.tape.save(path)     # an exception skips the automatic save
+    run.save(path)     # an exception skips the automatic save
     with llmtape.use(path, "replay"):
         with pytest.raises(llmtape.RecordedToolError, match="ValueError: bad 3"):
             boom(3)

@@ -61,7 +61,7 @@ def tape(request):
     path = folder / _file_name(options.get("name") or request.node.name)
     cassette = Cassette(path, mode, scrub=options.get("scrub") or (),
                         meta={"test": request.node.nodeid})
-    with cassette:
-        yield cassette
+    with cassette as run:
+        yield run
         if getattr(request.node, "_llmtape_failed", False):
             cassette.strict = False    # the test's own failure explains a short run
