@@ -1,5 +1,10 @@
 # Tape
 
+[![tests](https://github.com/ahmadhalawanii/Tape/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmadhalawanii/Tape/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/tag/ahmadhalawanii/Tape?label=release)](CHANGELOG.md)
+[![python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
+[![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Record, replay and diff LLM agent runs.
 
 Tape records every Claude API call and tool call your agent makes into a JSON file. Your
