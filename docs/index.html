@@ -3,332 +3,500 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tape: flight recorder for AI agents</title>
-<meta name="description" content="Record every model and tool call your AI agent makes. Replay it in tests for free. See exactly when a change makes the agent behave differently.">
-<meta property="og:title" content="Tape: flight recorder for AI agents">
+<title>Tape: record, replay and diff AI agents</title>
+<meta name="description" content="Record every model and tool call your AI agent makes. Replay it in tests for free, and fail the build the moment the agent starts behaving differently.">
+<meta property="og:title" content="Tape: your agent changed, Tape noticed">
 <meta property="og:description" content="Record, replay and diff LLM agent runs. Open source, Python, pytest.">
-<meta property="og:image" content="screenshot.png">
-<meta name="theme-color" content="#FF5A1F">
+<meta property="og:image" content="site.png">
+<meta name="theme-color" content="#0B0C0E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --orange: #FF5A1F;      /* international orange: the box */
-  --orange-deep: #E04A12;
-  --black: #0D0D0C;       /* readout */
-  --panel: #171716;
-  --line: #2B2A27;
-  --ink: #F2F0EA;
-  --dim: #A9A69D;
-  --white: #FBFAF6;       /* reflective stripe */
-  --ok: #6BD49B;
-  --bad: #FF5A1F;
-  --display: "Archivo", "Arial Narrow", sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --bg: #0B0C0E; --panel: #121317; --panel-2: #17181D; --raised: #1D1F25; --line: #24262D; --line-2: #2F323A;
+  --ink: #EDEEF0; --soft: #C4C7CE; --dim: #8B8F98;
+  --lime: #C8F05A; --lime-ink: #11160A; --coral: #FF6B57; --coral-ink: #1A0B08; --amber: #F5C350;
+  --sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, Menlo, monospace;
+  --ease: cubic-bezier(.16, 1, .3, 1);
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
-html { scrollbar-color: var(--line) var(--black); }
-body { margin: 0; background: var(--black); color: var(--ink); font: 400 17px/1.6 var(--display);
-  font-variation-settings: "wdth" 100; -webkit-font-smoothing: antialiased; }
-::selection { background: var(--orange); color: var(--black); }
-a { color: inherit; text-underline-offset: 4px; text-decoration-thickness: 1px; }
-:focus-visible { outline: 3px solid var(--white); outline-offset: 3px; }
+html { scroll-behavior: smooth; scrollbar-color: var(--line-2) var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+::selection { background: rgba(200, 240, 90, .28); }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--lime); outline-offset: 3px; border-radius: 6px; }
 code, pre, .mono { font-family: var(--mono); }
-.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
-@media (max-width: 600px) { .wrap { padding: 0 16px; } }
+.wrap { max-width: 1160px; margin: 0 auto; padding: 0 32px; }
+@media (max-width: 640px) { .wrap { padding: 0 18px; } }
 
-/* ---- the box ---------------------------------------------------------------- */
-.box { background: var(--orange); color: var(--black); position: relative; overflow: hidden; }
-.box ::selection { background: var(--black); color: var(--orange); }
-.top { display: flex; justify-content: space-between; align-items: center; padding: 22px 0; gap: 16px; }
-.word { font: 900 26px/1 var(--display); font-variation-settings: "wdth" 125; letter-spacing: .02em; text-decoration: none; }
-.top nav { display: flex; gap: 22px; font-weight: 600; font-size: 15px; }
-.top nav a { text-decoration: none; padding: 6px 0; border-bottom: 2px solid transparent; }
-.top nav a:hover { border-color: var(--black); }
-.plate-line { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; display: flex; gap: 18px; flex-wrap: wrap;
-  border-top: 2px solid var(--black); padding-top: 10px; }
-.hero { padding: 56px 0 44px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); column-gap: 48px; row-gap: 32px; align-items: end; }
-.hero h1 { grid-column: 1 / -1; }
-.hero .lede { margin: 0; }
-@media (max-width: 900px) { .hero { grid-template-columns: minmax(0, 1fr); padding-top: 36px; row-gap: 22px; } }
-h1 { margin: 0; font: 900 clamp(3rem, 8.4vw, 6rem)/0.92 var(--display); font-variation-settings: "wdth" 125;
-  letter-spacing: -0.03em; text-transform: uppercase; text-wrap: balance; }
-.lede { font-size: 20px; line-height: 1.5; max-width: 34ch; margin: 0 0 24px; font-weight: 500; }
-.install { display: flex; align-items: stretch; background: var(--black); color: var(--ink); border-radius: 4px; max-width: 600px; }
-.install code { flex: 1; min-width: 0; padding: 14px 16px; font-size: 12.5px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
-.install button { font: 700 13px var(--display); font-variation-settings: "wdth" 110; letter-spacing: .06em; text-transform: uppercase;
-  background: var(--white); color: var(--black); border: 0; padding: 0 18px; cursor: pointer; border-radius: 0 4px 4px 0; min-width: 84px; }
-.install button:hover { background: #fff; }
-.actions { display: flex; gap: 18px; margin-top: 16px; font-weight: 600; flex-wrap: wrap; }
-.actions a { padding: 4px 0; }
+/* ---- nav ---- */
+.nav { position: sticky; top: 0; z-index: 10; backdrop-filter: saturate(140%) blur(12px); background: rgba(11, 12, 14, .72);
+  border-bottom: 1px solid transparent; transition: border-color .3s; }
+.nav.scrolled { border-color: var(--line); }
+.nav .wrap { display: flex; justify-content: space-between; align-items: center; height: 68px; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 18px; letter-spacing: -.01em; }
+.reel { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--lime); display: grid; place-items: center; }
+.reel::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--lime); }
+.links { display: flex; align-items: center; gap: 28px; font-size: 14.5px; color: var(--dim); }
+.links a:hover { color: var(--ink); }
+.gh { display: inline-flex; align-items: center; gap: 8px; color: var(--ink) !important; border: 1px solid var(--line-2); padding: 7px 13px; border-radius: 9px; transition: background .2s, border-color .2s; }
+.gh:hover { background: var(--panel-2); border-color: var(--dim); }
+.gh svg { width: 16px; height: 16px; fill: currentColor; }
+@media (max-width: 640px) { .links .hide-sm { display: none; } .links { gap: 16px; } }
 
-/* the flight-data trace: two recorder tracks that split where the prompt changed */
-.trace { margin: 8px 0 0; padding: 26px 0 34px; border-top: 2px solid var(--black); }
-.trace-head { display: flex; justify-content: space-between; font: 600 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 18px; gap: 12px; flex-wrap: wrap; }
-.rec { display: inline-flex; align-items: center; gap: 8px; }
-.rec i { width: 10px; height: 10px; border-radius: 50%; background: var(--black); animation: blink 1.2s steps(2, start) infinite; }
-@keyframes blink { to { visibility: hidden; } }
-.tracks { display: grid; grid-template-columns: 92px repeat(4, minmax(0, 1fr)); row-gap: 14px; position: relative; padding-top: 30px; }
-.lane { font: 700 13px var(--mono); letter-spacing: .06em; text-transform: uppercase; align-self: center; }
-.ev { position: relative; padding: 0 10px 0 0; min-height: 66px; display: flex; align-items: center; }
-.ev::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 3px; background: var(--black); transform: translateY(-50%); }
-.ev .tag { position: relative; background: var(--orange); border: 2px solid var(--black); padding: 6px 10px; font: 600 13px/1.35 var(--mono); border-radius: 3px; }
-.ev .tag small { display: block; font-size: 11px; font-weight: 400; opacity: .8; }
-.ev.split .tag { background: var(--black); color: var(--orange); }
-.ev.alarm .tag { background: var(--white); border-color: var(--black); }
-.ev.quiet::before { opacity: .35; }
-.divergence { position: absolute; top: 0; bottom: 0; left: calc(92px + (100% - 92px) / 4 + 2px); width: 0; border-left: 2px dashed var(--black); }
-.divergence span { position: absolute; top: 0; left: 8px; white-space: nowrap; font: 700 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
-.reveal { animation: draw 2.4s cubic-bezier(.16, 1, .3, 1) both; }
-@keyframes draw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
-@media (max-width: 600px) {
-  h1 { font-size: 2.7rem; font-variation-settings: "wdth" 112; }
-  .top nav { gap: 14px; font-size: 14px; }
-  .lede { font-size: 18px; }
-}
-@media (max-width: 760px) {
-  .tracks { padding-top: 0; grid-template-columns: 1fr 1fr; grid-auto-flow: column; grid-template-rows: auto repeat(4, auto); column-gap: 12px; }
-  .lane { text-align: center; }
-  .ev { min-height: 0; padding: 10px 0; justify-content: center; }
-  .ev::before { left: 50%; right: auto; top: 0; bottom: 0; width: 3px; height: auto; transform: translateX(-50%); }
-  .ev .tag { width: 100%; text-align: center; font-size: 12px; }
-  .divergence { display: none; }
-  .reveal { animation-name: drawdown; }
-  @keyframes drawdown { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
-}
-.stripe { height: 18px; background: var(--white); border-top: 3px solid var(--black); }
+/* ---- hero ---- */
+.hero { position: relative; padding: 96px 0 48px; }
+.hero::before { content: ""; position: absolute; inset: -68px 0 0; z-index: -1; pointer-events: none;
+  background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px); background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 20%, #000 30%, transparent 75%); }
+.hero-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: end; }
+@media (max-width: 900px) { .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; } .hero { padding-top: 56px; } }
+h1 { font-size: clamp(2.9rem, 6.4vw, 4.6rem); line-height: 1.0; letter-spacing: -.045em; font-weight: 600; margin: 0; }
+h1 em { font-style: normal; color: var(--lime); }
+.sub { color: var(--dim); font-size: 18.5px; line-height: 1.55; max-width: 42ch; margin: 0 0 22px; }
+.sub b { color: var(--soft); font-weight: 500; }
+.install { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 7px 7px 7px 16px; max-width: 560px; }
+.install code { flex: 1; min-width: 0; font-size: 13.5px; color: var(--soft); white-space: nowrap; overflow-x: auto; scrollbar-width: none; }
+.install code span { color: var(--dim); user-select: none; }
+.copy { font: 500 13px var(--sans); background: var(--ink); color: var(--bg); border: 0; border-radius: 8px; padding: 8px 13px; cursor: pointer; min-width: 70px; transition: transform .15s; }
+.copy:active { transform: scale(.96); }
+.cta-row { display: flex; gap: 22px; margin-top: 16px; font-size: 14.5px; color: var(--dim); flex-wrap: wrap; }
+.cta-row a { border-bottom: 1px solid var(--line-2); padding-bottom: 2px; transition: color .2s, border-color .2s; }
+.cta-row a:hover { color: var(--ink); border-color: var(--ink); }
 
-/* ---- readout sections -------------------------------------------------------- */
-section.read { padding: 96px 0 0; }
-h2 { font: 800 clamp(2rem, 4.6vw, 3.4rem)/1.02 var(--display); font-variation-settings: "wdth" 118; letter-spacing: -0.02em;
-  margin: 0 0 18px; text-wrap: balance; max-width: 20ch; }
-.intro { color: var(--dim); font-size: 19px; max-width: 60ch; margin: 0 0 40px; }
-.intro strong { color: var(--ink); font-weight: 600; }
+/* ---- demo ---- */
+.demo { margin-top: 56px; border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
+  background: linear-gradient(180deg, #111216, #0D0E11); box-shadow: 0 30px 60px -30px rgba(0,0,0,.85); }
+.bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.seg { display: flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; position: relative; }
+.seg button { font: 500 13.5px var(--sans); color: var(--dim); background: none; border: 0; padding: 7px 13px; border-radius: 7px; cursor: pointer; position: relative; z-index: 1; transition: color .25s; }
+.seg button[aria-pressed="true"] { color: var(--ink); }
+.seg .thumb { position: absolute; top: 3px; bottom: 3px; border-radius: 7px; background: var(--raised); box-shadow: 0 1px 0 rgba(255,255,255,.05) inset; transition: left .45s var(--ease), width .45s var(--ease); }
+.replay { font: 600 13.5px var(--sans); background: var(--coral); color: var(--coral-ink); border: 0; border-radius: 9px; padding: 9px 14px; cursor: pointer; display: inline-flex; gap: 7px; align-items: center; transition: filter .2s, transform .15s; }
+.replay:hover { filter: brightness(1.08); } .replay:active { transform: scale(.97); }
+.replay svg { width: 14px; height: 14px; }
+.panes { display: grid; grid-template-columns: .95fr 1.05fr; }
+@media (max-width: 860px) { .panes { grid-template-columns: minmax(0, 1fr); } }
+.pane { padding: 20px 22px 24px; min-width: 0; }
+.pane + .pane { border-left: 1px solid var(--line); }
+@media (max-width: 860px) { .pane + .pane { border-left: 0; border-top: 1px solid var(--line); } }
+.label { font: 500 12px var(--mono); color: var(--dim); margin-bottom: 14px; display: flex; justify-content: space-between; gap: 10px; }
+.prompt { font: 13.5px/1.8 var(--mono); color: var(--soft); }
+.prompt .w { border-radius: 4px; padding: 1px 4px; margin: 0 -4px; transition: background .5s, color .5s; }
+.prompt .line { display: block; transition: opacity .5s; }
+.prompt .rule { border-radius: 4px; padding: 1px 4px; margin-left: -4px; text-decoration: line-through; text-decoration-color: transparent;
+  transition: color .5s, background .5s, text-decoration-color .5s; }
+.v2 .prompt .w { background: rgba(200, 240, 90, .1); color: var(--ink); }
+.v2 .prompt .rule { color: var(--coral); background: rgba(255, 107, 87, .08); text-decoration-color: rgba(255, 107, 87, .8); }
+.prompt .w-in { display: inline-block; overflow: hidden; vertical-align: bottom; max-width: 0; white-space: nowrap; transition: max-width .6s var(--ease); }
+.v2 .prompt .w-in { max-width: 9ch; }
+.run { position: relative; padding-left: 24px; list-style: none; margin: 0; }
+.run::before { content: ""; position: absolute; left: 6px; top: 10px; bottom: 10px; width: 2px; background: var(--line); }
+.step { position: relative; margin-bottom: 10px; font: 13.5px var(--mono); background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 13px; display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+  transition: opacity .45s var(--ease), transform .45s var(--ease), background .4s, border-color .4s, color .4s; }
+.step::before { content: ""; position: absolute; left: -23px; top: 14px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg); border: 2px solid var(--dim); transition: background .4s, border-color .4s; }
+.step small { color: var(--dim); font: 12.5px var(--sans); white-space: nowrap; }
+.step.pending { opacity: 0; transform: translateY(6px); }
+.step.ok { border-color: rgba(200, 240, 90, .35); }
+.step.ok::before { border-color: var(--lime); background: var(--lime); }
+.step.ok small { color: var(--lime); }
+.step.ghost { opacity: .42; border-style: dashed; text-decoration: line-through; }
+.step.bad { border-color: rgba(255, 107, 87, .6); background: rgba(255, 107, 87, .07); color: #FFB3A8; }
+.step.bad::before { border-color: var(--coral); background: var(--coral); }
+.step.bad small { color: var(--coral); }
+.term { border-top: 1px solid var(--line); background: #09090B; padding: 14px 22px 16px; font: 13px/1.7 var(--mono); color: var(--dim); min-height: 76px; overflow-wrap: anywhere; }
+.badge { font-weight: 500; padding: 1px 7px; border-radius: 5px; margin-right: 9px; }
+.badge.pass { background: var(--lime); color: var(--lime-ink); }
+.badge.fail { background: var(--coral); color: var(--coral-ink); }
+.term .e { color: var(--coral); } .term .t { color: var(--ink); }
+.facts { display: flex; gap: 12px 30px; color: var(--dim); font-size: 14.5px; padding: 20px 2px 0; flex-wrap: wrap; }
+.facts b { color: var(--ink); font-weight: 500; }
+.facts .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--lime); margin-right: 9px; vertical-align: 2px; }
 
-.report { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-@media (max-width: 860px) { .report { grid-template-columns: minmax(0, 1fr); } }
-.report > div { padding: 26px 26px 28px; }
-.report > div + div { border-left: 1px solid var(--line); }
-@media (max-width: 860px) { .report > div + div { border-left: 0; border-top: 1px solid var(--line); } }
-.report h3 { font: 700 14px var(--mono); letter-spacing: .06em; text-transform: uppercase; margin: 0 0 16px; color: var(--dim); }
-.report h3 b { color: var(--ink); }
-.steps { list-style: none; margin: 0; padding: 0; font: 13.5px/1.5 var(--mono); }
-.steps li { padding: 10px 12px; border-left: 3px solid var(--line); margin-bottom: 6px; background: var(--panel); overflow-wrap: anywhere; }
-.steps li.bad { border-color: var(--bad); color: var(--ink); }
-.steps li.good { border-color: var(--ok); }
-.steps li .note { display: block; color: var(--dim); font-size: 12px; }
-.steps li.bad .note { color: var(--orange); }
-.reply { margin-top: 18px; font-size: 16px; line-height: 1.55; padding: 14px 16px; background: var(--panel); border-radius: 4px; }
-.reply span { display: block; font: 600 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--dim); margin-bottom: 4px; }
-.verdict-bar { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
-  background: var(--orange); color: var(--black); padding: 16px 26px !important; font-weight: 700; }
-.verdict-bar a { font-weight: 700; }
+/* ---- sections ---- */
+section.sec { padding: 120px 0 0; }
+@media (max-width: 640px) { section.sec { padding-top: 88px; } }
+h2 { font-size: clamp(2rem, 4vw, 2.9rem); line-height: 1.08; letter-spacing: -.035em; font-weight: 600; margin: 0 0 16px; max-width: 18ch; text-wrap: balance; }
+h2 em { font-style: normal; color: var(--dim); }
+.lead { color: var(--dim); font-size: 18px; max-width: 58ch; margin: 0 0 48px; }
 
-.how { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
-@media (max-width: 860px) { .how { grid-template-columns: minmax(0, 1fr); } }
-.term { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-.term header { display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--line); font: 600 12px var(--mono); color: var(--dim); letter-spacing: .04em; }
-.term pre { margin: 0; padding: 18px 18px 20px; font-size: 13.5px; line-height: 1.6; overflow-x: auto; color: var(--ink); }
-.term .c { color: var(--dim); }
-.term .k { color: var(--orange); }
-.term .s { color: var(--ok); }
-.term .err { color: var(--orange); font-weight: 600; }
+/* record -> replay -> diff */
+.flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; position: relative; border-top: 1px solid var(--line); }
+@media (max-width: 860px) { .flow { grid-template-columns: minmax(0, 1fr); } }
+.flow > div { padding: 28px 28px 8px 0; position: relative; }
+.flow > div + div { padding-left: 28px; border-left: 1px solid var(--line); }
+@media (max-width: 860px) { .flow > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); } .flow > div { padding-right: 0; } }
+.flow .tick { position: absolute; top: -5px; left: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--bg); border: 2px solid var(--dim); }
+.flow > div + div .tick { left: -5px; }
+.flow > div:last-child .tick { background: var(--lime); border-color: var(--lime); }
+.flow h3 { font-size: 19px; letter-spacing: -.015em; margin: 4px 0 8px; font-weight: 600; }
+.flow p { color: var(--dim); margin: 0 0 18px; font-size: 15.5px; }
+.flow pre { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--soft); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; }
+.k { color: #A9B4FF; } .s { color: var(--lime); } .c { color: var(--dim); } .r { color: var(--coral); }
 
-/* equipment data plate */
-.plate { border: 2px solid var(--ink); border-radius: 6px; padding: 6px 0; position: relative; }
-.plate::before, .plate::after { content: ""; position: absolute; top: 12px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--dim); }
-.plate::before { left: 12px; } .plate::after { right: 12px; }
-.plate dl { margin: 0; display: grid; grid-template-columns: minmax(150px, 0.38fr) 1fr; }
-.plate dt, .plate dd { padding: 16px 32px; border-top: 1px solid var(--line); margin: 0; }
-.plate dl > :nth-child(1), .plate dl > :nth-child(2) { border-top: 0; }
-.plate dt { font: 700 13px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--orange); padding-top: 19px; }
-.plate dd { color: var(--ink); }
-.plate dd code { font-size: .88em; color: var(--dim); }
-@media (max-width: 640px) { .plate dl { grid-template-columns: 1fr; } .plate dd { border-top: 0; padding-top: 0; } .plate dt { padding-left: 20px; } .plate dd { padding-left: 20px; padding-right: 20px; } }
+/* editor with tabs */
+.split { display: grid; grid-template-columns: .8fr 1.2fr; gap: 56px; align-items: start; }
+@media (max-width: 900px) { .split { grid-template-columns: minmax(0, 1fr); gap: 32px; } }
+.checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.checks li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; color: var(--soft); }
+.checks li::before { content: ""; width: 16px; height: 16px; margin-top: 4px; border-radius: 5px; background: rgba(200, 240, 90, .14);
+  box-shadow: inset 0 0 0 1px rgba(200, 240, 90, .45); }
+.checks code { font-size: .88em; color: var(--ink); }
+.editor { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); }
+.tabs { display: flex; border-bottom: 1px solid var(--line); background: #0F1013; }
+.tabs button { font: 500 13px var(--mono); color: var(--dim); background: none; border: 0; border-right: 1px solid var(--line); padding: 12px 16px; cursor: pointer; position: relative; }
+.tabs button[aria-selected="true"] { color: var(--ink); background: var(--panel); }
+.tabs button[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--lime); }
+.editor pre { margin: 0; padding: 20px 22px; font-size: 13.5px; line-height: 1.75; overflow-x: auto; color: var(--soft); min-height: 300px; }
+.editor .ln { color: #4A4E57; user-select: none; display: inline-block; width: 2.2ch; margin-right: 14px; text-align: right; }
+[hidden] { display: none !important; }
 
-.end { margin-top: 110px; background: var(--orange); color: var(--black); }
-.end .wrap { padding-top: 56px; padding-bottom: 56px; display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: end; }
-@media (max-width: 760px) { .end .wrap { grid-template-columns: minmax(0, 1fr); } }
-.end h2 { margin: 0; max-width: 16ch; }
-.end .install { max-width: 560px; }
-footer { padding: 26px 0 40px; color: var(--dim); font-size: 14px; }
-footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+/* PR comment */
+.pr { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); }
+.pr-head { display: flex; align-items: center; gap: 12px; padding: 13px 18px; border-bottom: 1px solid var(--line); background: #0F1013; font-size: 14px; color: var(--dim); flex-wrap: wrap; }
+.pr-head b { color: var(--ink); font-weight: 600; }
+.avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--raised); display: grid; place-items: center; }
+.avatar .reel { width: 14px; height: 14px; } .avatar .reel::after { width: 6px; height: 6px; }
+.pr-body { padding: 22px 24px 24px; }
+.pr-body h3 { overflow-wrap: anywhere; margin: 0 0 12px; font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
+.pr-body ul { margin: 0 0 20px; padding-left: 20px; color: var(--soft); }
+.pr-body li { margin: 4px 0; }
+.pr-body li code { color: var(--ink); font-size: .9em; }
+table.m { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; margin-bottom: 18px; }
+.m th, .m td { border: 1px solid var(--line); padding: 8px 12px; text-align: right; }
+.m th:first-child, .m td:first-child { text-align: left; }
+.m th { color: var(--dim); font-weight: 500; background: #0F1013; }
+.m .down { color: var(--lime); }
+.diffblock { font: 13px/1.7 var(--mono); background: #0F1013; border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; }
+.diffblock .minus { color: var(--coral); display: block; } .diffblock .plus { color: var(--lime); display: block; } .diffblock .same { color: var(--soft); display: block; }
+.scroll { overflow-x: auto; }
 
+/* spec */
+.spec { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+@media (max-width: 760px) { .spec { grid-template-columns: 1fr; } }
+.spec > div { padding: 26px 32px 26px 0; border-bottom: 1px solid var(--line); }
+.spec > div:nth-child(even) { padding-left: 32px; padding-right: 0; border-left: 1px solid var(--line); }
+@media (max-width: 760px) { .spec > div:nth-child(even) { padding-left: 0; border-left: 0; } .spec > div { padding-right: 0; } }
+.spec h3 { font-size: 16.5px; font-weight: 600; margin: 0 0 6px; letter-spacing: -.01em; }
+.spec p { color: var(--dim); margin: 0; font-size: 15.5px; }
+.spec code { color: var(--soft); font-size: .88em; }
+.spec .limit h3 { color: var(--dim); }
+
+/* closing */
+.closing { margin-top: 140px; border-top: 1px solid var(--line); position: relative; overflow: hidden; }
+.closing::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 50% 80% at 50% 0%, rgba(200, 240, 90, .07), transparent 70%); }
+.closing .wrap { padding-top: 96px; padding-bottom: 96px; text-align: center; position: relative; }
+.closing h2 { margin: 0 auto 14px; max-width: 16ch; }
+.closing .lead { margin: 0 auto 30px; }
+.closing .install { margin: 0 auto; text-align: left; }
+.closing .cta-row { justify-content: center; }
+footer { border-top: 1px solid var(--line); color: var(--dim); font-size: 14px; }
+footer .wrap { display: flex; justify-content: space-between; gap: 16px; padding-top: 26px; padding-bottom: 34px; flex-wrap: wrap; }
+footer a:hover { color: var(--ink); }
+
+.rise { opacity: 0; transform: translateY(14px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
+.rise.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
-  .reveal { animation: none; }
-  .rec i { animation: none; }
+  *, *::before, *::after { transition-duration: 0s !important; animation: none !important; }
+  .rise { opacity: 1; transform: none; }
 }
 </style>
 </head>
 <body>
 
-<div class="box">
+<header class="nav" id="nav">
   <div class="wrap">
-    <div class="top">
-      <a class="word" href="./">TAPE</a>
-      <nav aria-label="Main">
-        <a href="#incident">Demo</a>
-        <a href="#how">How it works</a>
-        <a href="https://github.com/ahmadhalawanii/Tape">GitHub</a>
-      </nav>
-    </div>
-    <div class="plate-line" aria-hidden="true"><span>Flight recorder for LLM agents</span><span>Python 3.10+</span><span>MIT</span></div>
-
-    <div class="hero">
-      <h1>Flight recorder for AI agents</h1>
-      <p class="lede">Record every model call and tool call your agent makes. Replay it in tests for free. Find out on the first call when a change makes the agent behave differently.</p>
-      <div>
-        <div class="install">
-          <code id="cmd">pip install git+https://github.com/ahmadhalawanii/Tape</code>
-          <button type="button" data-copy="cmd">Copy</button>
-        </div>
-        <div class="actions">
-          <a href="report.html">Open the full diff report</a>
-          <a href="https://github.com/ahmadhalawanii/Tape#readme">Read the docs</a>
-        </div>
-      </div>
-    </div>
-
-    <figure class="trace" aria-labelledby="trace-cap">
-      <div class="trace-head">
-        <span class="rec"><i aria-hidden="true"></i> Replay of the refund desk demo</span>
-        <span id="trace-cap">Same customer, two prompts</span>
-      </div>
-      <div class="tracks reveal">
-        <div class="divergence" aria-hidden="true"><span>Call 0: system prompt changed</span></div>
-        <div class="lane">Before</div>
-        <div class="ev"><span class="tag">user<small>refund my tent, N1002</small></span></div>
-        <div class="ev"><span class="tag">lookup_order<small>N1002, $489</small></span></div>
-        <div class="ev split"><span class="tag">check_policy<small>64 days: refused</small></span></div>
-        <div class="ev quiet"><span class="tag">declined<small>store credit offered</small></span></div>
-        <div class="lane">After</div>
-        <div class="ev"><span class="tag">user<small>refund my tent, N1002</small></span></div>
-        <div class="ev"><span class="tag">lookup_order<small>N1002, $489</small></span></div>
-        <div class="ev alarm"><span class="tag">issue_refund<small>policy never checked</small></span></div>
-        <div class="ev alarm"><span class="tag">$489 refunded<small>outside the 30-day window</small></span></div>
-      </div>
-    </figure>
+    <a class="logo" href="#top" aria-label="Tape home"><span class="reel" aria-hidden="true"></span>tape</a>
+    <nav class="links" aria-label="Main">
+      <a href="#demo" class="hide-sm">Demo</a>
+      <a href="#how" class="hide-sm">How it works</a>
+      <a href="report.html">Diff report</a>
+      <a class="gh" href="https://github.com/ahmadhalawanii/Tape"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.34c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.88.87 2.34.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+    </nav>
   </div>
-  <div class="stripe" aria-hidden="true"></div>
-</div>
+</header>
 
-<main>
-  <section class="read" id="incident">
+<main id="top">
+  <section class="hero">
     <div class="wrap">
-      <h2>A friendlier prompt refunded a $489 tent</h2>
-      <p class="intro">The returns agent's prompt was rewritten to sound warmer. The rewrite dropped one line, <strong>"always call check_policy before issue_refund"</strong>, and every reply still read fine. The replay test failed on the first model call, and the diff showed what the agent now does.</p>
+      <div class="hero-grid">
+        <h1>Your agent changed.<br><em>Tape noticed.</em></h1>
+        <div>
+          <p class="sub">Record every model and tool call once. Replay it in tests <b>for free</b>, and fail the build the moment your agent starts behaving differently.</p>
+          <div class="install">
+            <code id="cmd"><span>$ </span>pip install git+https://github.com/ahmadhalawanii/Tape</code>
+            <button class="copy" type="button" data-copy="cmd">Copy</button>
+          </div>
+        </div>
+      </div>
 
-      <div class="report">
-        <div>
-          <h3><b>Before</b> · prompt v1</h3>
-          <ol class="steps">
-            <li>lookup_order({"order_id": "N1002"})</li>
-            <li class="good">check_policy({"order_id": "N1002"})<span class="note">eligible: false, delivered 64 days ago</span></li>
-          </ol>
-          <p class="reply"><span>Agent's reply</span>I'm sorry, the 4-season tent can't be refunded: it was delivered 64 days ago; the window is 30 days. I can offer $489.00 in store credit instead.</p>
+      <div class="demo" id="demo" aria-label="Interactive demo">
+        <div class="bar">
+          <div class="seg" role="group" aria-label="Prompt version">
+            <span class="thumb" aria-hidden="true"></span>
+            <button type="button" data-v="1" aria-pressed="true">Prompt v1</button>
+            <button type="button" data-v="2" aria-pressed="false">Prompt v2 · friendlier</button>
+          </div>
+          <button class="replay" type="button" id="replay"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v3h3"/></svg>Replay the run</button>
         </div>
-        <div>
-          <h3><b>After</b> · prompt v2</h3>
-          <ol class="steps">
-            <li>lookup_order({"order_id": "N1002"})</li>
-            <li class="bad">issue_refund({"order_id": "N1002", "amount": 489})<span class="note">check_policy skipped</span></li>
-          </ol>
-          <p class="reply"><span>Agent's reply</span>Done. $489.00 is on its way back to your card (reference RF-N1002). It usually lands in 3 to 5 days.</p>
+        <div class="panes" id="panes">
+          <div class="pane">
+            <div class="label"><span>system prompt</span><span id="edits">original</span></div>
+            <div class="prompt">
+              <span class="line">You are the <span class="w"><span class="w-in">friendly&nbsp;</span></span>returns desk for Northwind Outdoor.</span>
+              <span class="line">&nbsp;</span>
+              <span class="line">1. Look up the order with lookup_order.</span>
+              <span class="line"><span class="rule">2. Always call check_policy before issue_refund.</span></span>
+              <span class="line">3. Keep replies short and warm.</span>
+            </div>
+          </div>
+          <div class="pane">
+            <div class="label"><span>agent run · replayed from tape</span><span>3 model calls</span></div>
+            <ol class="run" id="run">
+              <li class="step"><span>user: "refund my tent, N1002"</span></li>
+              <li class="step"><span>lookup_order(N1002)</span><small>$489 · delivered 64 days ago</small></li>
+              <li class="step" id="s-policy"><span>check_policy(N1002)</span><small>refused: 30-day window</small></li>
+              <li class="step ok" id="s-out"><span id="s-out-text">reply: store credit offered</span><small id="s-out-note">declined correctly</small></li>
+            </ol>
+          </div>
         </div>
-        <div class="verdict-bar">
-          <span>Caught in CI, on model call 0, with no API call made.</span>
-          <a href="report.html">See the full diff report</a>
-        </div>
+        <div class="term" id="term" aria-live="polite"></div>
+      </div>
+      <div class="facts">
+        <span><span class="dot"></span><b>0 API calls</b> in replay</span>
+        <span><b>No API key</b> needed in CI</span>
+        <span><b>Caught at call 0</b>, before a single refund</span>
       </div>
     </div>
   </section>
 
-  <section class="read" id="how">
+  <section class="sec" id="how">
     <div class="wrap">
       <h2>Record once. Replay on every commit.</h2>
-      <p class="intro">Tape patches the Anthropic SDK while a test runs. The first run records each request, response and tool result to a JSON tape. Every later run replays from it, and fails the moment the agent asks the model for something different.</p>
-      <div class="how">
-        <div class="term">
-          <header><span>test_refund_desk.py</span><span>pytest</span></header>
-<pre><span class="k">def</span> test_declines_an_order_outside_the_window(client, tape):
-    RefundDesk(client).handle(
-        <span class="s">"I'd like a refund for my tent, order N1002."</span>)
-
-    tape.assert_called(<span class="s">"check_policy"</span>, order_id=<span class="s">"N1002"</span>)
-    tape.assert_not_called(<span class="s">"issue_refund"</span>)
-    tape.assert_text_contains(<span class="s">"store credit"</span>)</pre>
+      <p class="lead">Tape patches the Anthropic SDK while your test runs. Nothing in your agent changes, and no client needs passing in.</p>
+      <div class="flow rise">
+        <div><span class="tick"></span>
+          <h3>Record</h3>
+          <p>The first run calls Claude for real and saves each request, response and tool result to a JSON tape.</p>
+<pre><span class="c"># first run, or LLMTAPE_MODE=record</span>
+pytest
+<span class="c"># -&gt; tests/tapes/test_refund/....json</span></pre>
         </div>
-        <div class="term">
-          <header><span>after the prompt change</span><span>pytest --tape-mode=replay</span></header>
-<pre><span class="err">TapeDivergence</span>: Run diverged from tapes/test_refund_desk/
-  test_declines_an_order_outside_the_window.json
-  at model call #0.
-Request differs from the recording:
-  system: <span class="s">"You are the returns desk for Northwind…"</span>
-       -> <span class="k">"You are the friendly returns desk for…"</span>
-<span class="c">If the change is intended, re-record with
-LLMTAPE_MODE=update: it replays the matching prefix
-and calls the API only from this point.</span></pre>
+        <div><span class="tick"></span>
+          <h3>Replay</h3>
+          <p>Every later run answers from the tape. It's fast, free and the same every time, and tools don't need your database.</p>
+<pre>pytest --tape-mode=replay
+<span class="c"># 0 API calls, no key needed</span></pre>
+        </div>
+        <div><span class="tick"></span>
+          <h3>Diff</h3>
+          <p>When a request no longer matches, the test fails at that call and Tape shows what the agent now does.</p>
+<pre>tape diff tests/tapes/x.json --git main
+<span class="r">- check_policy(N1002)</span>
+<span class="s">+ issue_refund(N1002, 489)</span></pre>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="read" id="spec">
-    <div class="wrap">
-      <h2>Specification</h2>
-      <div class="plate">
-        <dl>
-          <dt>Records</dt><dd>Every <code>messages.create</code> call (sync, async, beta) and every function wrapped in <code>@llmtape.tool</code>, into plain JSON that diffs cleanly in git.</dd>
-          <dt>Replays</dt><dd>In milliseconds, at no cost, with no API key. Tools return their recorded output, so tests need no database.</dd>
-          <dt>Update mode</dt><dd>Replays while requests match and calls the API only from the first difference, so re-recording pays for the changed part of the run.</dd>
-          <dt>Diffs</dt><dd>Behaviour, not text: skipped and new tool calls, changed arguments, the final reply, tokens and cost. As text, markdown, JSON or an HTML page.</dd>
-          <dt>Asserts</dt><dd><code>assert_called</code>, <code>assert_called_before</code>, <code>assert_order</code>, <code>assert_cost_below</code> and more, each failing with the whole tool trajectory.</dd>
-          <dt>Protects</dt><dd>API keys from Anthropic, OpenAI, AWS, GitHub, Stripe and Slack are redacted before a tape is written. A divergence can't be swallowed by an agent's <code>except Exception</code>.</dd>
-          <dt>In CI</dt><dd>Replay-only test runs, plus a behaviour diff of every changed tape in the pull request's job summary.</dd>
-          <dt>Limits</dt><dd>Anthropic SDK only for now. Streaming isn't recorded yet. The demo's tapes come from a scripted stand-in model so it runs without a key.</dd>
-        </dl>
+  <section class="sec">
+    <div class="wrap split">
+      <div class="rise">
+        <h2>Test what the agent does, not what it says.</h2>
+        <p class="lead" style="margin-bottom:28px">Each assertion fails with the whole tool trajectory, so you see what happened instead of a bare <code>False</code>.</p>
+        <ul class="checks">
+          <li><span><code>assert_called</code> with a subset of arguments</span></li>
+          <li><span><code>assert_called_before("check_policy", "issue_refund")</code></span></li>
+          <li><span><code>assert_not_called</code>, <code>assert_order</code>, <code>assert_max_calls</code></span></li>
+          <li><span><code>assert_cost_below(0.01)</code> from real token usage</span></li>
+        </ul>
       </div>
+      <div class="editor rise">
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" aria-controls="t1" id="tab1">test_refund_desk.py</button>
+          <button role="tab" aria-selected="false" aria-controls="t2" id="tab2">after the prompt change</button>
+        </div>
+<pre id="t1" role="tabpanel" aria-labelledby="tab1"><span class="ln">1</span><span class="k">def</span> test_declines_an_order_outside_the_window(client, tape):
+<span class="ln">2</span>    RefundDesk(client).handle(
+<span class="ln">3</span>        <span class="s">"I'd like a refund for my tent, order N1002."</span>)
+<span class="ln">4</span>
+<span class="ln">5</span>    tape.assert_called(<span class="s">"check_policy"</span>, order_id=<span class="s">"N1002"</span>)
+<span class="ln">6</span>    tape.assert_not_called(<span class="s">"issue_refund"</span>)
+<span class="ln">7</span>    tape.assert_text_contains(<span class="s">"store credit"</span>)</pre>
+<pre id="t2" role="tabpanel" aria-labelledby="tab2" hidden><span class="r">FAILED</span> test_declines_an_order_outside_the_window
+
+<span class="r">TapeDivergence</span>: Run diverged from tapes/test_refund_desk/
+  test_declines_an_order_outside_the_window.json at model call #0.
+Request differs from the recording:
+  system: <span class="s">"You are the returns desk for Northwind…"</span>
+       -&gt; <span class="r">"You are the friendly returns desk for…"</span>
+
+<span class="c">If the change is intended, re-record with LLMTAPE_MODE=update:
+it replays the matching prefix and calls the API only from here.</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap split">
+      <div class="rise">
+        <h2>Behaviour changes, in the pull request.</h2>
+        <p class="lead">The CI workflow replays every test, then writes a behaviour diff for each tape the pull request changed. A reviewer sees "now calls issue_refund" next to the prompt edit that caused it.</p>
+      </div>
+      <div class="pr rise">
+        <div class="pr-head"><span class="avatar"><span class="reel"></span></span><b>tape diff</b> commented on the job summary</div>
+        <div class="pr-body">
+          <h3>Agent behaviour changed: <code>test_declines_an_order_outside_the_window.json</code></h3>
+          <ul>
+            <li>no longer calls <code>check_policy({"order_id": "N1002"})</code></li>
+            <li>now calls <code>issue_refund({"order_id": "N1002", "amount": 489})</code></li>
+            <li>final reply changed</li>
+          </ul>
+          <div class="scroll"><table class="m">
+            <thead><tr><th></th><th>before</th><th>after</th><th>change</th></tr></thead>
+            <tbody>
+              <tr><td>model calls</td><td>3</td><td>3</td><td>0</td></tr>
+              <tr><td>input tokens</td><td>1,215</td><td>1,014</td><td class="down">-201</td></tr>
+              <tr><td>cost</td><td>$0.00018</td><td>$0.00015</td><td class="down">-$0.00003</td></tr>
+            </tbody>
+          </table></div>
+          <div class="diffblock"><span class="same">  lookup_order({"order_id": "N1002"})</span><span class="minus">- check_policy({"order_id": "N1002"})</span><span class="plus">+ issue_refund({"order_id": "N1002", "amount": 489})</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <h2>Small library. <em>Sharp edges handled.</em></h2>
+      <p class="lead">Everything here is in the repo, with tests.</p>
+      <div class="spec rise">
+        <div><h3>Update mode</h3><p>Replays while requests match and calls the API only from the first difference, so re-recording pays for the part that changed.</p></div>
+        <div><h3>Tools on tape</h3><p>Wrap a function in <code>@llmtape.tool</code> and replay returns its recorded result, errors included.</p></div>
+        <div><h3>Can't be swallowed</h3><p>A divergence is a <code>BaseException</code>, so an agent's <code>except Exception:</code> fallback can't hide it.</p></div>
+        <div><h3>Keys never saved</h3><p>Anthropic, OpenAI, AWS, GitHub, Stripe and Slack keys are redacted before a tape is written.</p></div>
+        <div><h3>Diffs you can read</h3><p>Text, markdown, JSON or a single offline HTML page. <a href="report.html" style="color:var(--ink);border-bottom:1px solid var(--line-2)">See the demo report</a>.</p></div>
+        <div class="limit"><h3>Limits, honestly</h3><p>Anthropic SDK only for now, and streaming isn't recorded yet. The demo uses a scripted stand-in model so it runs without a key.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="closing">
+    <div class="wrap">
+      <h2>Put your agent on tape.</h2>
+      <p class="lead">Python 3.10+, the Anthropic SDK, and pytest. MIT licensed.</p>
+      <div class="install">
+        <code id="cmd2"><span>$ </span>pip install git+https://github.com/ahmadhalawanii/Tape</code>
+        <button class="copy" type="button" data-copy="cmd2">Copy</button>
+      </div>
+      <div class="cta-row"><a href="https://github.com/ahmadhalawanii/Tape#readme">Read the docs</a><a href="https://github.com/ahmadhalawanii/Tape">Star on GitHub</a></div>
     </div>
   </section>
 </main>
 
-<div class="end">
-  <div class="wrap">
-    <h2>Put your agent on tape</h2>
-    <div>
-      <div class="install">
-        <code id="cmd2">pip install git+https://github.com/ahmadhalawanii/Tape</code>
-        <button type="button" data-copy="cmd2">Copy</button>
-      </div>
-    </div>
-  </div>
-</div>
 <footer>
   <div class="wrap">
-    <span>Built by Ahmad Halawani. Open source under the MIT licence.</span>
+    <span>Built by Ahmad Halawani</span>
     <a href="https://github.com/ahmadhalawanii/Tape">github.com/ahmadhalawanii/Tape</a>
   </div>
 </footer>
 
 <script>
-document.querySelectorAll("[data-copy]").forEach(btn => {
-  btn.addEventListener("click", async () => {
-    const text = document.getElementById(btn.dataset.copy).textContent;
-    try {
-      await navigator.clipboard.writeText(text);
-      btn.textContent = "Copied";
-    } catch (e) {
-      const range = document.createRange();
-      range.selectNodeContents(document.getElementById(btn.dataset.copy));
-      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
-      btn.textContent = "Selected";
+(function () {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const $ = s => document.querySelector(s);
+
+  // copy buttons
+  document.querySelectorAll("[data-copy]").forEach(btn => btn.addEventListener("click", async () => {
+    const text = $("#" + btn.dataset.copy).textContent.replace(/^\$ /, "");
+    try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; }
+    catch (e) { btn.textContent = "Select it"; }
+    setTimeout(() => (btn.textContent = "Copy"), 1600);
+  }));
+
+  // nav border on scroll
+  const nav = $("#nav");
+  addEventListener("scroll", () => nav.classList.toggle("scrolled", scrollY > 8), { passive: true });
+
+  // ---- the demo ----
+  const demo = $("#demo"), seg = demo.querySelector(".seg"), thumb = seg.querySelector(".thumb");
+  const buttons = [...seg.querySelectorAll("button")];
+  const steps = [...demo.querySelectorAll(".step")];
+  const policy = $("#s-policy"), out = $("#s-out"), outText = $("#s-out-text"), outNote = $("#s-out-note");
+  const term = $("#term"), edits = $("#edits");
+  let version = 1, timers = [];
+
+  function placeThumb() {
+    const b = buttons[version - 1];
+    thumb.style.left = b.offsetLeft + "px"; thumb.style.width = b.offsetWidth + "px";
+  }
+  function setTerm(v) {
+    term.replaceChildren();
+    const badge = document.createElement("span");
+    const name = document.createElement("span");
+    name.className = "t"; name.textContent = "test_declines_an_order_outside_the_window";
+    if (v === 1) {
+      badge.className = "badge pass"; badge.textContent = "PASSED";
+      const note = document.createElement("div");
+      note.textContent = "replayed from tape · check_policy called before any refund";
+      term.append(badge, name, note);
+    } else {
+      badge.className = "badge fail"; badge.textContent = "FAILED";
+      const err = document.createElement("div");
+      const e = document.createElement("span"); e.className = "e"; e.textContent = "TapeDivergence: ";
+      err.append(e, "run diverged at model call #0 · system prompt changed");
+      term.append(badge, name, err);
     }
-    setTimeout(() => { btn.textContent = "Copy"; }, 1800);
-  });
-});
+  }
+  function render(v, animate) {
+    timers.forEach(clearTimeout); timers = [];
+    version = v;
+    buttons.forEach((b, i) => b.setAttribute("aria-pressed", String(i === v - 1)));
+    placeThumb();
+    demo.classList.toggle("v2", v === 2);
+    edits.textContent = v === 2 ? "edited: 1 word added, 1 rule removed" : "original";
+    const finish = () => {
+      policy.className = "step" + (v === 2 ? " ghost" : "");
+      policy.querySelector("small").textContent = v === 2 ? "skipped" : "refused: 30-day window";
+      out.className = "step " + (v === 2 ? "bad" : "ok");
+      outText.textContent = v === 2 ? "issue_refund(N1002, 489)" : "reply: store credit offered";
+      outNote.textContent = v === 2 ? "outside the 30-day window" : "declined correctly";
+    };
+    if (!animate || reduce) { finish(); steps.forEach(s => s.classList.remove("pending")); setTerm(v); return; }
+    term.replaceChildren(); term.textContent = "replaying…";
+    steps.forEach(s => s.classList.add("pending"));
+    timers.push(setTimeout(finish, 120));
+    steps.forEach((s, i) => timers.push(setTimeout(() => s.classList.remove("pending"), 450 + i * 380)));
+    timers.push(setTimeout(() => setTerm(v), 450 + steps.length * 380 + 150));
+  }
+  buttons.forEach((b, i) => b.addEventListener("click", () => render(i + 1, true)));
+  $("#replay").addEventListener("click", () => render(version, true));
+  addEventListener("resize", placeThumb);
+  document.fonts.ready.then(placeThumb);
+  render(1, false);
+
+  // play the change once, when the demo first comes into view
+  let played = false;
+  new IntersectionObserver(([e], obs) => {
+    if (e.isIntersecting && !played) { played = true; obs.disconnect(); setTimeout(() => render(2, true), reduce ? 0 : 900); }
+  }, { threshold: .55 }).observe(demo);
+
+  // editor tabs
+  const tabs = [...document.querySelectorAll('[role="tab"]')];
+  tabs.forEach(t => t.addEventListener("click", () => tabs.forEach(o => {
+    const on = o === t; o.setAttribute("aria-selected", String(on));
+    document.getElementById(o.getAttribute("aria-controls")).hidden = !on;
+  })));
+
+  // reveal on scroll
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .15 });
+  document.querySelectorAll(".rise").forEach(el => io.observe(el));
+})();
 </script>
 </body>
 </html>

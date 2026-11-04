@@ -8,7 +8,7 @@ cost nothing, and give the same answer every time. When you change a prompt or t
 agent's code, Tape tells you exactly where the run stopped matching the recording, and
 shows what the agent now does differently.
 
-![Tape's project site: a flight-data trace of two agent runs splitting where the prompt changed](docs/site.png)
+![Tape's project site: an interactive replay where a friendlier prompt makes the agent skip its policy check and refund $489](docs/site.png)
 
 ![A Tape diff: a prompt rewrite makes the agent skip the policy check and refund $489](docs/screenshot.png)
 

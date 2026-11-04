@@ -1,37 +1,46 @@
 ---
 name: Tape
-description: Flight recorder for AI agents. The orange box over a dark readout.
+description: The product demo is the design. A calm charcoal developer-tool site where an interactive replay shows what Tape does.
 colors:
-  international-orange: "#FF5A1F"
-  readout-black: "#0D0D0C"
-  readout-panel: "#171716"
-  readout-line: "#2B2A27"
-  ink: "#F2F0EA"
-  dim: "#A9A69D"
-  reflective-white: "#FBFAF6"
-  ok-green: "#6BD49B"
-  warn-amber: "#F2C457"
+  charcoal: "#0B0C0E"
+  panel: "#121317"
+  panel-2: "#17181D"
+  raised: "#1D1F25"
+  well: "#0F1013"
+  line: "#24262D"
+  line-2: "#2F323A"
+  ink: "#EDEEF0"
+  soft: "#C4C7CE"
+  dim: "#8B8F98"
+  gutter: "#4A4E57"
+  lime: "#C8F05A"
+  lime-ink: "#11160A"
+  coral: "#FF6B57"
+  coral-ink: "#1A0B08"
+  coral-soft: "#FFB3A8"
+  amber: "#F5C350"
+  keyword: "#A9B4FF"
 typography:
-  display: { fontFamily: "Archivo", fontWeight: 900, note: "wdth 112-125, uppercase for the hero" }
-  heading: { fontFamily: "Archivo", fontWeight: 800 }
-  body: { fontFamily: "Archivo", fontWeight: 400 }
-  data: { fontFamily: "JetBrains Mono", fontWeight: 400 }
-rounded: { sm: "3px", md: "6px" }
+  display: { fontFamily: "Geist", fontWeight: 600, letterSpacing: "-0.045em" }
+  body: { fontFamily: "Geist", fontWeight: 400 }
+  code: { fontFamily: "Geist Mono", fontWeight: 400 }
+rounded: { sm: "6px", md: "10px", lg: "14px", xl: "18px" }
 ---
 
 ## Overview
-Tape is a flight recorder for AI agents, so the identity is the recorder itself: an international-orange box with black placard lettering and a white reflective stripe, opening onto a near-black readout. Orange is committed at region scale (hero, closing band, report header), never sprinkled as an accent.
+Tape's site sells by showing. The hero is an interactive replay: switch the refund agent's prompt from v1 to v2, watch one rule disappear, the run replay step by step, `issue_refund $489` light up, and the test turn red. Everything else stays calm so that moment carries the page.
 
 ## Colors
-International orange owns the box and marks alarms on the readout (skipped calls, the divergence). Green means a step that still happens correctly; amber means changed arguments. Text on orange is always readout black, never white.
+Charcoal ground with layered panels. Lime means recorded, passing, or the brand mark. Coral means divergence, a skipped rule, or a failing test. Amber marks changed arguments in the report. Colour is used for state, never decoration.
 
 ## Typography
-Archivo set wide (width 112-125) and heavy for display, like aviation placards; regular width for body. JetBrains Mono only for code, tool calls and data. The generated report uses system faces so it stays one offline file.
+Geist for UI and headings, set tight (-0.045em on the hero); Geist Mono for prompts, tool calls, code and terminals. The generated report lists Geist first but falls back to system faces, because it is a single offline file.
 
 ## Components
-- Flight-data trace: two recorder tracks (before, after) drawn as black lines with boxed event tags; a dashed line marks where the requests diverged; alarm events are reflective-white tags. It draws once left to right, and top to bottom on phones; it stays still under reduced motion.
-- Data plate: bordered spec list with two rivets, orange monospace labels.
-- Report track: before and after tool calls aligned on a spine, coloured by skipped, new or changed.
+- Demo panel: segmented control with a sliding thumb, prompt pane, run timeline on a spine, terminal strip with PASSED/FAILED badge.
+- Flow: three connected columns (record, replay, diff) on one rule, the last tick lime.
+- Editor: tabbed code panel with line numbers; PR comment: the CI markdown summary rendered.
+- Spec grid: two columns of short facts on hairlines, the limits stated in the last cell.
 
-## Do and don't
-Do keep one orange region per screen section. Don't add glow, gradients, or hazard stripes; the single reflective stripe is the only band.
+## Motion
+One authored moment: the demo replays when it first scrolls into view (once), steps rising 380ms apart with an exponential ease-out. Sections fade up on first view. All of it is off under reduced motion.

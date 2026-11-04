@@ -1,9 +1,9 @@
 # Surface: docs/index.html (landing) and src/llmtape/report.html (generated report)
 
 ## Direction contract
-THESIS: Tape is the flight recorder for AI agents. The page is the orange box and its readout, refusing the category default of a dark dev-tool hero with a neon accent and three feature cards.
-OWN-WORLD: international orange (#FF5A1F) drenching the hero as the box itself, black placard type set wide and heavy (Archivo, width 125, weight 800-900), white reflective stripe as the one band, near-black readout panels below, JetBrains Mono only for code and data, equipment data plate for the spec list.
-STORY: visitor learns what Tape is in one line, watches two runs diverge on the trace, reads the $489 incident, sees the test and the failure output, then installs or opens GitHub.
-FIRST VIEWPORT: orange field; wordmark and GitHub link top; headline "Flight recorder for AI agents" left at display size; install command with copy button as the primary action under it; the flight-data trace spanning the width below, drawing itself once.
-FORM: pinned by the user (Flight recorder), Persuade mode, code-led; no concept-seed roll.
+THESIS: the product demo is the design. The hero is an interactive replay of the refund-desk incident, refusing both the themed costume (flight recorder, ASCII, cassette) and the static screenshot hero.
+OWN-WORLD: charcoal ground with layered panels, Geist and Geist Mono, lime for recorded and passing, coral for divergence and failure, amber for changed arguments; state colour only.
+STORY: the visitor reads "Your agent changed. Tape noticed.", watches the prompt lose one rule and the run refund $489, sees the test fail, then reads how it works, the assertions, the CI comment and the spec, and installs.
+FIRST VIEWPORT: headline left, one-line pitch and install command right, demo panel full width below with the v1/v2 switch and Replay button.
+FORM: user-approved recommendation after rejecting three themed directions, Persuade mode, code-led.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

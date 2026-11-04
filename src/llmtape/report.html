@@ -5,15 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{TITLE}}</title>
 <style>
-/* System faces on purpose: the page is one offline file and makes no network requests.
-   Palette: Tape's flight-recorder world, the orange box over a dark readout. */
+/* Offline by design: Geist is used when installed, system faces otherwise. Matches the Tape site. */
 :root {
-  --bg: #0D0D0C; --panel: #171716; --ink: #F2F0EA; --muted: #A9A69D; --line: #2B2A27;
-  --orange: #FF5A1F; --black: #0D0D0C;
-  --add: #6BD49B; --add-bg: #12301F; --del: #FF7A4D; --del-bg: #3A1A0E;
-  --chg: #F2C457; --chg-bg: #332A0E; --accent: #FF7A4D; --tool-bg: #1F1F1D; --spine: #3A3935;
-  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  --sans: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --bg: #0B0C0E; --panel: #121317; --ink: #EDEEF0; --muted: #8B8F98; --line: #24262D;
+  --add: #C8F05A; --add-bg: rgba(200, 240, 90, .09); --del: #FF6B57; --del-bg: rgba(255, 107, 87, .09);
+  --chg: #F5C350; --chg-bg: rgba(245, 195, 80, .09); --accent: #C8F05A; --tool-bg: #17181D; --spine: #2F323A;
+  --orange: #FF6B57; --black: #0B0C0E;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -27,11 +26,12 @@ a { color: var(--accent); text-underline-offset: 3px; }
 main { max-width: 1240px; margin: 0 auto; padding: 32px 16px 80px; }
 header.band + main { padding-top: 32px; }
 
-header.band { background: var(--orange); color: var(--black); }
-header.band .in { max-width: 1240px; margin: 0 auto; padding: 16px 16px 14px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
-.mark { font: 900 22px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; }
-header.band .sub { color: var(--black); font: 600 13px var(--mono); overflow-wrap: anywhere; }
-header.band::after { content: ""; display: block; height: 8px; background: #FBFAF6; border-top: 2px solid var(--black); }
+header.band { border-bottom: 1px solid var(--line); }
+header.band .in { max-width: 1240px; margin: 0 auto; padding: 18px 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.mark { display: flex; align-items: center; gap: 9px; font: 600 17px/1 var(--sans); letter-spacing: -.01em; }
+.mark::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--add);
+  background: radial-gradient(circle, var(--add) 0 3px, transparent 3.5px); }
+header.band .sub { color: var(--muted); font: 13px var(--mono); overflow-wrap: anywhere; }
 .sub { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
 h2 { font-size: 17px; font-weight: 650; margin: 44px 0 14px; letter-spacing: -0.01em; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; }
@@ -39,9 +39,8 @@ h2 { font-size: 17px; font-weight: 650; margin: 44px 0 14px; letter-spacing: -0.
 /* verdict */
 .verdict { display: grid; grid-template-columns: 10px 1fr; gap: 14px; }
 .verdict .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 10px; background: var(--add); }
-.verdict.changed .dot { background: var(--orange); }
-.verdict.changed h1 { color: var(--orange); }
-.verdict h1 { font-size: 26px; font-weight: 850; line-height: 1.2; margin: 0 0 12px; letter-spacing: -0.015em; text-wrap: balance; text-transform: uppercase; }
+.verdict.changed .dot { background: var(--del); }
+.verdict h1 { font-size: 26px; font-weight: 600; line-height: 1.2; margin: 0 0 12px; letter-spacing: -0.03em; text-wrap: balance; }
 .verdict ul { margin: 0; padding-left: 18px; }
 .verdict li { margin: 4px 0; overflow-wrap: anywhere; }
 .verdict li code { color: var(--ink); }
@@ -150,7 +149,7 @@ table.nums { width: 100%; border-collapse: collapse; font-variant-numeric: tabul
   function header(sub) {
     const h = el("header", "band");
     const inner = el("div", "in");
-    inner.append(el("div", "mark", "Tape"), el("div", "sub", sub));
+    inner.append(el("div", "mark", "tape"), el("div", "sub", sub));
     h.append(inner);
     document.body.insertBefore(h, app);
   }
