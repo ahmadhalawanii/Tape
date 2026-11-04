@@ -3,7 +3,7 @@
     python -m examples.refund_desk.demo            # scripted stand-in model, free
     ANTHROPIC_API_KEY=... python -m examples.refund_desk.demo --live   # real Claude
 
-Writes docs/demo/before.json, docs/demo/after.json and docs/index.html.
+Writes docs/demo/before.json, docs/demo/after.json and docs/report.html.
 """
 
 from __future__ import annotations
@@ -40,10 +40,10 @@ def main() -> None:
         tapes.append(run)
 
     diff = llmtape.diff_tapes(*tapes)
-    (DOCS / "index.html").write_text(report.render(diff=diff, title="Tape: a prompt edit that refunds $489"),
+    (DOCS / "report.html").write_text(report.render(diff=diff, title="Tape: a prompt edit that refunds $489"),
                                      encoding="utf-8")
     print(diff.to_text(color=True))
-    print(f"\nwrote {DOCS / 'index.html'}")
+    print(f"\nwrote {DOCS / 'report.html'}")
 
 
 if __name__ == "__main__":

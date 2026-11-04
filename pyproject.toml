@@ -23,7 +23,7 @@ dependencies = ["anthropic>=1.0"]
 dev = ["pytest>=8"]
 
 [project.urls]
-Homepage = "https://github.com/ahmadhalawanii/tape"
+Homepage = "https://github.com/ahmadhalawanii/Tape"
 
 [project.scripts]
 tape = "llmtape.cli:main"

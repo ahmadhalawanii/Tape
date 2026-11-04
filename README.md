@@ -8,13 +8,16 @@ cost nothing, and give the same answer every time. When you change a prompt or t
 agent's code, Tape tells you exactly where the run stopped matching the recording, and
 shows what the agent now does differently.
 
+![Tape's project site: a flight-data trace of two agent runs splitting where the prompt changed](docs/site.png)
+
 ![A Tape diff: a prompt rewrite makes the agent skip the policy check and refund $489](docs/screenshot.png)
 
-The page above comes from the example in this repo. A support agent's system prompt was
+The diff page above comes from the example in this repo. A support agent's system prompt was
 rewritten to sound friendlier, and the rewrite dropped one line: "always call check_policy
 before issue_refund". Every response still read fine. Tape's replay test failed on the
 first model call, and the diff shows the agent now refunds a $489 tent that is outside the
-30-day window. [Open the live page](https://ahmadhalawanii.github.io/tape/).
+30-day window. [See the project site](https://ahmadhalawanii.github.io/Tape/) or
+[the full diff report](https://ahmadhalawanii.github.io/Tape/report.html).
 
 ## Why
 
@@ -32,7 +35,7 @@ have changed.
 ## Install
 
 ```bash
-pip install git+https://github.com/ahmadhalawanii/tape
+pip install git+https://github.com/ahmadhalawanii/Tape
 ```
 
 Python 3.10+, `anthropic` 1.x or later.
@@ -185,7 +188,7 @@ your own tests.
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 pytest
-python -m examples.refund_desk.demo     # rebuilds docs/index.html
+python -m examples.refund_desk.demo     # rebuilds docs/report.html
 ```
 
 MIT licensed.
