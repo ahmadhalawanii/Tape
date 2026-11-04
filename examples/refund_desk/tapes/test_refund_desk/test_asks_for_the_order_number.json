@@ -1,0 +1,99 @@
+{
+  "llmtape": 1,
+  "meta": {
+    "test": "examples/refund_desk/test_refund_desk.py::test_asks_for_the_order_number",
+    "mode": "record",
+    "recorded_at": "2026-11-04T11:11:28+00:00"
+  },
+  "events": [
+    {
+      "kind": "model",
+      "endpoint": "messages",
+      "fingerprint": "e90cf80f22c8eae7",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "max_tokens": 4096,
+        "system": "You are the returns desk for Northwind Outdoor, an online outdoor gear shop.\n\nHelp customers with refunds. For every refund request:\n1. Look up the order with lookup_order.\n2. Always call check_policy before issue_refund. Only refund when the policy allows it.\n3. If the policy refuses, explain why politely and offer store credit instead.\n\nBe brief and friendly. Never promise anything the tools did not confirm.",
+        "tools": [
+          {
+            "name": "lookup_order",
+            "description": "Fetch an order by its id, e.g. N1001.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ]
+            }
+          },
+          {
+            "name": "check_policy",
+            "description": "Check whether an order can be refunded under the 30-day returns policy.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id",
+                "reason"
+              ]
+            }
+          },
+          {
+            "name": "issue_refund",
+            "description": "Refund an order to the original payment method. Irreversible.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "order_id",
+                "amount"
+              ]
+            }
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "My jacket zip broke, can I get my money back?"
+          }
+        ]
+      },
+      "response": {
+        "id": "msg_000013",
+        "content": [
+          {
+            "text": "Happy to help. What is your order number? It starts with N.",
+            "type": "text"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "end_turn",
+        "type": "message",
+        "usage": {
+          "input_tokens": 305,
+          "output_tokens": 22
+        }
+      },
+      "latency_ms": 0
+    }
+  ]
+}

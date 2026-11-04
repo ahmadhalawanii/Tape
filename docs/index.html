@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tape: a prompt edit that refunds $489</title>
+<style>
+:root {
+  --bg: #f7f6f3; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6a66; --line: #e4e2dc;
+  --add: #1f7a4d; --add-bg: #e5f4ec; --del: #b42318; --del-bg: #fbe9e7;
+  --chg: #9a6700; --chg-bg: #fff4d6; --accent: #3b5bdb; --tool-bg: #f1f0ec;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131312; --panel: #1c1c1a; --ink: #ecebe6; --muted: #9d9b94; --line: #2e2d2a;
+    --add: #5fd39a; --add-bg: #12301f; --del: #ff8a7a; --del-bg: #3a1714;
+    --chg: #f0c04a; --chg-bg: #33280c; --accent: #91a7ff; --tool-bg: #24231f;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131312; --panel: #1c1c1a; --ink: #ecebe6; --muted: #9d9b94; --line: #2e2d2a;
+  --add: #5fd39a; --add-bg: #12301f; --del: #ff8a7a; --del-bg: #3a1714;
+  --chg: #f0c04a; --chg-bg: #33280c; --accent: #91a7ff; --tool-bg: #24231f;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+main { max-width: 1240px; margin: 0 auto; padding: 32px 16px 80px; }
+header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 24px; }
+.mark { font: 700 22px/1 var(--mono); letter-spacing: -0.02em; }
+.mark span { color: var(--accent); }
+.sub { color: var(--muted); font-size: 14px; word-break: break-all; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+  margin: 32px 0 12px; font-weight: 600; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; }
+.verdict { display: flex; gap: 12px; align-items: flex-start; }
+.verdict .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 8px; flex: none; background: var(--add); }
+.verdict.changed .dot { background: var(--chg); }
+.verdict h1 { font-size: 20px; margin: 0 0 6px; }
+.verdict ul { margin: 0; padding-left: 18px; }
+.verdict li { margin: 2px 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.stat .k { color: var(--muted); font-size: 12px; }
+.stat .v { font: 600 18px/1.3 var(--mono); }
+.stat .d { font: 12px var(--mono); }
+.up { color: var(--del); } .down { color: var(--add); }
+.traj { font: 13.5px/1.5 var(--mono); padding: 0; margin: 0; list-style: none; }
+.traj li { padding: 6px 10px; border-radius: 6px; margin: 2px 0; overflow-wrap: anywhere; }
+.traj .added { background: var(--add-bg); color: var(--add); }
+.traj .removed { background: var(--del-bg); color: var(--del); text-decoration: line-through; text-decoration-thickness: 1px; }
+.traj .changed { background: var(--chg-bg); color: var(--chg); }
+.traj .note { display: block; font-size: 12px; opacity: .85; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
+.col-title { font: 600 13px var(--mono); margin: 0 0 10px; color: var(--muted); word-break: break-all; }
+.msg { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.msg .who { font-size: 12px; font-weight: 600; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.msg .meta { font: 11.5px var(--mono); font-weight: 400; }
+.msg.system { border-style: dashed; }
+.msg.system .text { max-height: 7.5em; overflow: hidden; position: relative; }
+.msg.system.open .text { max-height: none; }
+.msg.system button { min-height: 32px; margin-top: 2px; background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; font: inherit; font-size: 13px; }
+.text { white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 4px; }
+.tool { font: 13px/1.5 var(--mono); background: var(--tool-bg); border-radius: 6px; padding: 8px 10px; margin-top: 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tool b { color: var(--accent); font-weight: 600; }
+.tool.result { color: var(--muted); }
+.tool.error { color: var(--del); }
+.changes { font: 12.5px/1.6 var(--mono); color: var(--muted); margin: 8px 0 0; padding-left: 18px; overflow-wrap: anywhere; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.next { margin-top: 12px; font-size: 13.5px; color: var(--muted); }
+.next code { font: 12.5px var(--mono); background: var(--tool-bg); padding: 2px 6px; border-radius: 4px; color: var(--ink); }
+.tabs button { min-height: 36px; font: 13px var(--mono); border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+.tabs button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.foot { margin-top: 48px; color: var(--muted); font-size: 13px; }
+.foot a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script id="tape-data" type="application/json">{"kind": "diff", "diff": {"a": "docs/demo/before.json", "b": "docs/demo/after.json", "behaviour_changed": true, "headline": ["no longer calls check_policy({\"order_id\": \"N1002\", \"reason\": \"I'd like a refund for my tent, order N1002.\"})", "now calls issue_refund({\"order_id\": \"N1002\", \"amount\": 489.0})", "final reply changed"], "first_divergence": 0, "request_changes": ["system: \"You are the returns desk for Northwind Outdoor, an o\" -> \"You are the friendly returns desk for Northwind Outd\""], "trajectory": [{"op": "same", "a": {"name": "lookup_order", "input": {"order_id": "N1002"}, "call_index": 0}, "b": {"name": "lookup_order", "input": {"order_id": "N1002"}, "call_index": 0}, "changes": []}, {"op": "removed", "a": {"name": "check_policy", "input": {"order_id": "N1002", "reason": "I'd like a refund for my tent, order N1002."}, "call_index": 1}, "b": null, "changes": []}, {"op": "added", "a": null, "b": {"name": "issue_refund", "input": {"order_id": "N1002", "amount": 489.0}, "call_index": 1}, "changes": []}], "text_a": "I'm sorry, the 4-season tent can't be refunded: it was delivered 64 days ago; the window is 30 days. I can offer $489.00 in store credit instead. Would that help?", "text_b": "Done. $489.00 is on its way back to your card (reference RF-N1002). It usually lands in 3 to 5 days.", "metrics": [{"name": "model_calls", "a": 3, "b": 3}, {"name": "tool_calls", "a": 2, "b": 2}, {"name": "input_tokens", "a": 1215, "b": 1014}, {"name": "output_tokens", "a": 124, "b": 98}, {"name": "cost_usd", "a": 0.00018350000000000002, "b": 0.00015040000000000002}, {"name": "latency_ms", "a": 27, "b": 3}]}, "tapes": [{"name": "docs/demo/before.json", "summary": {"model_calls": 3, "tool_calls": 2, "models": ["claude-haiku-5-5"], "input_tokens": 1215, "output_tokens": 124, "cache_read_input_tokens": 0, "cache_creation_input_tokens": 0, "cost_usd": 0.00018350000000000002, "latency_ms": 27}, "meta": {"prompt": "before", "recorded_against": "scripted stand-in model (examples/refund_desk/scripted_model.py)", "mode": "record", "recorded_at": "2026-11-04T11:17:58+00:00"}, "transcript": [{"role": "system", "blocks": [{"type": "text", "text": "You are the returns desk for Northwind Outdoor, an online outdoor gear shop.\n\nHelp customers with refunds. For every refund request:\n1. Look up the order with lookup_order.\n2. Always call check_policy before issue_refund. Only refund when the policy allows it.\n3. If the policy refuses, explain why politely and offer store credit instead.\n\nBe brief and friendly. Never promise anything the tools did not confirm."}]}, {"role": "user", "blocks": [{"type": "text", "text": "I'd like a refund for my tent, order N1002."}]}, {"role": "assistant", "call": 0, "blocks": [{"type": "text", "text": "Let me pull up that order."}, {"type": "tool_use", "name": "lookup_order", "input": {"order_id": "N1002"}}], "meta": {"model": "claude-haiku-5-5", "stop_reason": "tool_use", "usage": {"input_tokens": 304, "output_tokens": 38}, "latency_ms": 24, "cost_usd": 4.940000000000001e-05}}, {"role": "user", "blocks": [{"type": "tool_result", "text": "{\"order_id\": \"N1002\", \"item\": \"4-season tent\", \"total\": 489.0, \"delivered\": \"2026-09-01\", \"status\": \"delivered\"}", "is_error": false}]}, {"role": "assistant", "call": 1, "blocks": [{"type": "tool_use", "name": "check_policy", "input": {"order_id": "N1002", "reason": "I'd like a refund for my tent, order N1002."}}], "meta": {"model": "claude-haiku-5-5", "stop_reason": "tool_use", "usage": {"input_tokens": 409, "output_tokens": 38}, "latency_ms": 2, "cost_usd": 5.9900000000000006e-05}}, {"role": "user", "blocks": [{"type": "tool_result", "text": "{\"eligible\": false, \"why\": \"delivered 64 days ago; the window is 30 days\"}", "is_error": false}]}, {"role": "assistant", "call": 2, "blocks": [{"type": "text", "text": "I'm sorry, the 4-season tent can't be refunded: it was delivered 64 days ago; the window is 30 days. I can offer $489.00 in store credit instead. Would that help?"}], "meta": {"model": "claude-haiku-5-5", "stop_reason": "end_turn", "usage": {"input_tokens": 502, "output_tokens": 48}, "latency_ms": 1, "cost_usd": 7.42e-05}}]}, {"name": "docs/demo/after.json", "summary": {"model_calls": 3, "tool_calls": 2, "models": ["claude-haiku-5-5"], "input_tokens": 1014, "output_tokens": 98, "cache_read_input_tokens": 0, "cache_creation_input_tokens": 0, "cost_usd": 0.00015040000000000002, "latency_ms": 3}, "meta": {"prompt": "after", "recorded_against": "scripted stand-in model (examples/refund_desk/scripted_model.py)", "mode": "record", "recorded_at": "2026-11-04T11:17:58+00:00"}, "transcript": [{"role": "system", "blocks": [{"type": "text", "text": "You are the friendly returns desk for Northwind Outdoor.\n\nCustomers come first: look up their order and sort out their refund quickly.\nKeep replies short and warm."}]}, {"role": "user", "blocks": [{"type": "text", "text": "I'd like a refund for my tent, order N1002."}]}, {"role": "assistant", "call": 0, "blocks": [{"type": "text", "text": "Let me pull up that order."}, {"type": "tool_use", "name": "lookup_order", "input": {"order_id": "N1002"}}], "meta": {"model": "claude-haiku-5-5", "stop_reason": "tool_use", "usage": {"input_tokens": 241, "output_tokens": 38}, "latency_ms": 1, "cost_usd": 4.3100000000000004e-05}}, {"role": "user", "blocks": [{"type": "tool_result", "text": "{\"order_id\": \"N1002\", \"item\": \"4-season tent\", \"total\": 489.0, \"delivered\": \"2026-09-01\", \"status\": \"delivered\"}", "is_error": false}]}, {"role": "assistant", "call": 1, "blocks": [{"type": "tool_use", "name": "issue_refund", "input": {"order_id": "N1002", "amount": 489.0}}], "meta": {"model": "claude-haiku-5-5", "stop_reason": "tool_use", "usage": {"input_tokens": 346, "output_tokens": 28}, "latency_ms": 1, "cost_usd": 4.86e-05}}, {"role": "user", "blocks": [{"type": "tool_result", "text": "{\"refunded\": 489.0, \"order_id\": \"N1002\", \"reference\": \"RF-N1002\"}", "is_error": false}]}, {"role": "assistant", "call": 2, "blocks": [{"type": "text", "text": "Done. $489.00 is on its way back to your card (reference RF-N1002). It usually lands in 3 to 5 days."}], "meta": {"model": "claude-haiku-5-5", "stop_reason": "end_turn", "usage": {"input_tokens": 427, "output_tokens": 32}, "latency_ms": 1, "cost_usd": 5.8700000000000004e-05}}]}]}</script>
+<script>
+(function () {
+  const data = JSON.parse(document.getElementById("tape-data").textContent);
+  const app = document.getElementById("app");
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined && text !== null) n.textContent = text;
+    return n;
+  }
+  const call = c => c.name + "(" + JSON.stringify(c.input) + ")";
+  const money = v => v === null || v === undefined ? "?" : "$" + v.toFixed(5);
+  const num = v => v === null || v === undefined ? "?" : v.toLocaleString();
+
+  function header(sub) {
+    const h = el("header");
+    const m = el("div", "mark"); m.append("tape"); m.append(el("span", null, "."));
+    h.append(m, el("div", "sub", sub));
+    app.append(h);
+  }
+
+  function stat(label, a, b, fmt) {
+    const s = el("div", "stat");
+    s.append(el("div", "k", label), el("div", "v", fmt(b === undefined ? a : b)));
+    if (b !== undefined && a !== null && b !== null && a !== b) {
+      const d = b - a;
+      const t = (d > 0 ? "+" : "") + (label === "cost" ? money(d).replace("$-", "-$") : num(d)) +
+        (a ? " (" + (d > 0 ? "+" : "") + Math.round(d / a * 100) + "%)" : "");
+      s.append(el("div", "d " + (d > 0 ? "up" : "down"), t + " vs before"));
+    }
+    return s;
+  }
+
+  function stats(a, b) {
+    const g = el("div", "stats");
+    const pick = (k) => b ? [a[k], b[k]] : [a[k]];
+    g.append(
+      stat("model calls", ...pick("model_calls"), num),
+      stat("tool calls", ...pick("tool_calls"), num),
+      stat("input tokens", ...pick("input_tokens"), num),
+      stat("output tokens", ...pick("output_tokens"), num),
+      stat("cost", ...pick("cost_usd"), money),
+      stat("latency ms", ...pick("latency_ms"), num));
+    return g;
+  }
+
+  function transcript(items) {
+    const wrap = el("div");
+    items.forEach(item => {
+      const m = el("div", "msg " + item.role);
+      const toolOnly = item.blocks.length && item.blocks.every(b => b.type === "tool_result");
+      const who = el("div", "who", item.role === "assistant" ? "agent" : toolOnly ? "tool" : item.role);
+      if (item.meta) {
+        const u = item.meta.usage || {};
+        who.append(el("span", "meta", "#" + item.call + " · " + (item.meta.model || "") + " · " +
+          num(u.input_tokens) + "→" + num(u.output_tokens) + " tok · " + num(item.meta.latency_ms) + " ms"));
+      }
+      m.append(who);
+      item.blocks.forEach(b => {
+        if (b.type === "text" || b.type === "thinking" || b.type === "other") {
+          m.append(el("div", "text", b.text));
+        } else if (b.type === "tool_use") {
+          const t = el("div", "tool");
+          t.append(el("b", null, b.name), JSON.stringify(b.input, null, 2));
+          m.append(t);
+        } else if (b.type === "tool_result") {
+          m.append(el("div", "tool " + (b.is_error ? "error" : "result"), "↳ " + b.text));
+        }
+      });
+      if (item.role === "system") {
+        const btn = el("button", null, "show full prompt");
+        btn.onclick = () => { m.classList.toggle("open"); btn.textContent = m.classList.contains("open") ? "collapse" : "show full prompt"; };
+        m.append(btn);
+      }
+      wrap.append(m);
+    });
+    return wrap;
+  }
+
+  function diffView() {
+    const d = data.diff;
+    const [A, B] = data.tapes;
+    header(d.a + "  →  " + d.b);
+
+    const v = el("div", "panel verdict" + (d.behaviour_changed ? " changed" : ""));
+    v.append(el("div", "dot"));
+    const body = el("div");
+    body.append(el("h1", null, d.behaviour_changed ? "Agent behaviour changed" : "No change in agent behaviour"));
+    if (d.headline.length) {
+      const ul = el("ul"); d.headline.forEach(h => ul.append(el("li", null, h))); body.append(ul);
+    }
+    if (d.first_divergence !== null) {
+      body.append(el("div", "sub", "First differing request: model call #" + d.first_divergence));
+      const ch = el("ul", "changes");
+      d.request_changes.slice(0, 6).forEach(c => ch.append(el("li", null, c)));
+      body.append(ch);
+    }
+    if (d.behaviour_changed) {
+      const n = el("div", "next");
+      n.append("Intended? Re-record with ");
+      n.append(el("code", null, "LLMTAPE_MODE=update pytest"));
+      n.append(" and commit the tape. Not intended? The replay test fails until the agent is fixed.");
+      body.append(n);
+    }
+    v.append(body);
+    app.append(v);
+
+    app.append(el("h2", null, "Numbers, after vs before"));
+    app.append(stats(A.summary, B.summary));
+
+    app.append(el("h2", null, "Tool calls"));
+    const p = el("div", "panel");
+    const ul = el("ul", "traj");
+    if (!d.trajectory.length) ul.append(el("li", null, "(no tool calls)"));
+    d.trajectory.forEach(s => {
+      const li = el("li", s.op);
+      if (s.op === "added") li.textContent = "+ " + call(s.b);
+      else if (s.op === "removed") li.textContent = "− " + call(s.a);
+      else if (s.op === "changed") { li.textContent = "~ " + call(s.b); li.append(el("span", "note", s.changes.join("; "))); }
+      else li.textContent = "  " + call(s.a);
+      ul.append(li);
+    });
+    p.append(ul);
+    app.append(p);
+
+    app.append(el("h2", null, "Conversations"));
+    const cols = el("div", "cols");
+    [A, B].forEach((t, i) => {
+      const c = el("div");
+      c.append(el("div", "col-title", (i ? "after  " : "before  ") + t.name));
+      c.append(transcript(t.transcript));
+      cols.append(c);
+    });
+    app.append(cols);
+  }
+
+  function tapesView() {
+    header(data.tapes.length + " tape" + (data.tapes.length === 1 ? "" : "s"));
+    const tabs = el("div", "tabs");
+    const view = el("div");
+    function show(i) {
+      [...tabs.children].forEach((b, j) => b.setAttribute("aria-pressed", String(i === j)));
+      view.replaceChildren();
+      const t = data.tapes[i];
+      view.append(stats(t.summary));
+      view.append(el("h2", null, "Conversation"));
+      view.append(transcript(t.transcript));
+    }
+    data.tapes.forEach((t, i) => {
+      const b = el("button", null, t.name.split("/").slice(-2).join("/"));
+      b.onclick = () => show(i);
+      tabs.append(b);
+    });
+    if (data.tapes.length > 1) app.append(tabs);
+    app.append(view);
+    if (data.tapes.length) show(0);
+  }
+
+  data.kind === "diff" ? diffView() : tapesView();
+  const f = el("div", "foot");
+  f.append("Generated by ");
+  const a = el("a", null, "Tape"); a.href = "https://github.com/ahmadhalawanii/tape";
+  f.append(a, ", record, replay and diff for LLM agents.");
+  app.append(f);
+})();
+</script>
+</body>
+</html>

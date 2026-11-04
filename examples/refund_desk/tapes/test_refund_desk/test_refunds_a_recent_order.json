@@ -1,0 +1,576 @@
+{
+  "llmtape": 1,
+  "meta": {
+    "test": "examples/refund_desk/test_refund_desk.py::test_refunds_a_recent_order",
+    "mode": "record",
+    "recorded_at": "2026-11-04T11:11:28+00:00"
+  },
+  "events": [
+    {
+      "kind": "model",
+      "endpoint": "messages",
+      "fingerprint": "7a7dffdca671f12a",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "max_tokens": 4096,
+        "system": "You are the returns desk for Northwind Outdoor, an online outdoor gear shop.\n\nHelp customers with refunds. For every refund request:\n1. Look up the order with lookup_order.\n2. Always call check_policy before issue_refund. Only refund when the policy allows it.\n3. If the policy refuses, explain why politely and offer store credit instead.\n\nBe brief and friendly. Never promise anything the tools did not confirm.",
+        "tools": [
+          {
+            "name": "lookup_order",
+            "description": "Fetch an order by its id, e.g. N1001.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ]
+            }
+          },
+          {
+            "name": "check_policy",
+            "description": "Check whether an order can be refunded under the 30-day returns policy.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id",
+                "reason"
+              ]
+            }
+          },
+          {
+            "name": "issue_refund",
+            "description": "Refund an order to the original payment method. Irreversible.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "order_id",
+                "amount"
+              ]
+            }
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hi, my trail shoes from order N1001 fell apart. Refund please?"
+          }
+        ]
+      },
+      "response": {
+        "id": "msg_000002",
+        "content": [
+          {
+            "text": "Let me pull up that order.",
+            "type": "text"
+          },
+          {
+            "id": "toolu_0001",
+            "input": {
+              "order_id": "N1001"
+            },
+            "name": "lookup_order",
+            "type": "tool_use"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "tool_use",
+        "type": "message",
+        "usage": {
+          "input_tokens": 309,
+          "output_tokens": 38
+        }
+      },
+      "latency_ms": 19
+    },
+    {
+      "kind": "tool",
+      "name": "lookup_order",
+      "input": {
+        "order_id": "N1001"
+      },
+      "output": {
+        "order_id": "N1001",
+        "item": "Trail running shoes",
+        "total": 129.0,
+        "delivered": "2026-10-20",
+        "status": "delivered"
+      }
+    },
+    {
+      "kind": "model",
+      "endpoint": "messages",
+      "fingerprint": "2088813e1a86100c",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "max_tokens": 4096,
+        "system": "You are the returns desk for Northwind Outdoor, an online outdoor gear shop.\n\nHelp customers with refunds. For every refund request:\n1. Look up the order with lookup_order.\n2. Always call check_policy before issue_refund. Only refund when the policy allows it.\n3. If the policy refuses, explain why politely and offer store credit instead.\n\nBe brief and friendly. Never promise anything the tools did not confirm.",
+        "tools": [
+          {
+            "name": "lookup_order",
+            "description": "Fetch an order by its id, e.g. N1001.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ]
+            }
+          },
+          {
+            "name": "check_policy",
+            "description": "Check whether an order can be refunded under the 30-day returns policy.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id",
+                "reason"
+              ]
+            }
+          },
+          {
+            "name": "issue_refund",
+            "description": "Refund an order to the original payment method. Irreversible.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "order_id",
+                "amount"
+              ]
+            }
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hi, my trail shoes from order N1001 fell apart. Refund please?"
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "text": "Let me pull up that order.",
+                "type": "text"
+              },
+              {
+                "id": "toolu_0001",
+                "input": {
+                  "order_id": "N1001"
+                },
+                "name": "lookup_order",
+                "type": "tool_use"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "toolu_0001",
+                "content": "{\"order_id\": \"N1001\", \"item\": \"Trail running shoes\", \"total\": 129.0, \"delivered\": \"2026-10-20\", \"status\": \"delivered\"}"
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "id": "msg_000004",
+        "content": [
+          {
+            "id": "toolu_0003",
+            "input": {
+              "order_id": "N1001",
+              "reason": "Hi, my trail shoes from order N1001 fell apart. Refund please?"
+            },
+            "name": "check_policy",
+            "type": "tool_use"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "tool_use",
+        "type": "message",
+        "usage": {
+          "input_tokens": 415,
+          "output_tokens": 43
+        }
+      },
+      "latency_ms": 1
+    },
+    {
+      "kind": "tool",
+      "name": "check_policy",
+      "input": {
+        "order_id": "N1001",
+        "reason": "Hi, my trail shoes from order N1001 fell apart. Refund please?"
+      },
+      "output": {
+        "eligible": true,
+        "max_amount": 129.0
+      }
+    },
+    {
+      "kind": "model",
+      "endpoint": "messages",
+      "fingerprint": "57dff75db75ab3e0",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "max_tokens": 4096,
+        "system": "You are the returns desk for Northwind Outdoor, an online outdoor gear shop.\n\nHelp customers with refunds. For every refund request:\n1. Look up the order with lookup_order.\n2. Always call check_policy before issue_refund. Only refund when the policy allows it.\n3. If the policy refuses, explain why politely and offer store credit instead.\n\nBe brief and friendly. Never promise anything the tools did not confirm.",
+        "tools": [
+          {
+            "name": "lookup_order",
+            "description": "Fetch an order by its id, e.g. N1001.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ]
+            }
+          },
+          {
+            "name": "check_policy",
+            "description": "Check whether an order can be refunded under the 30-day returns policy.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id",
+                "reason"
+              ]
+            }
+          },
+          {
+            "name": "issue_refund",
+            "description": "Refund an order to the original payment method. Irreversible.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "order_id",
+                "amount"
+              ]
+            }
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hi, my trail shoes from order N1001 fell apart. Refund please?"
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "text": "Let me pull up that order.",
+                "type": "text"
+              },
+              {
+                "id": "toolu_0001",
+                "input": {
+                  "order_id": "N1001"
+                },
+                "name": "lookup_order",
+                "type": "tool_use"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "toolu_0001",
+                "content": "{\"order_id\": \"N1001\", \"item\": \"Trail running shoes\", \"total\": 129.0, \"delivered\": \"2026-10-20\", \"status\": \"delivered\"}"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "id": "toolu_0003",
+                "input": {
+                  "order_id": "N1001",
+                  "reason": "Hi, my trail shoes from order N1001 fell apart. Refund please?"
+                },
+                "name": "check_policy",
+                "type": "tool_use"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "toolu_0003",
+                "content": "{\"eligible\": true, \"max_amount\": 129.0}"
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "id": "msg_000006",
+        "content": [
+          {
+            "id": "toolu_0005",
+            "input": {
+              "order_id": "N1001",
+              "amount": 129.0
+            },
+            "name": "issue_refund",
+            "type": "tool_use"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "tool_use",
+        "type": "message",
+        "usage": {
+          "input_tokens": 504,
+          "output_tokens": 28
+        }
+      },
+      "latency_ms": 0
+    },
+    {
+      "kind": "tool",
+      "name": "issue_refund",
+      "input": {
+        "order_id": "N1001",
+        "amount": 129.0
+      },
+      "output": {
+        "refunded": 129.0,
+        "order_id": "N1001",
+        "reference": "RF-N1001"
+      }
+    },
+    {
+      "kind": "model",
+      "endpoint": "messages",
+      "fingerprint": "e43c5c95da51fbed",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "max_tokens": 4096,
+        "system": "You are the returns desk for Northwind Outdoor, an online outdoor gear shop.\n\nHelp customers with refunds. For every refund request:\n1. Look up the order with lookup_order.\n2. Always call check_policy before issue_refund. Only refund when the policy allows it.\n3. If the policy refuses, explain why politely and offer store credit instead.\n\nBe brief and friendly. Never promise anything the tools did not confirm.",
+        "tools": [
+          {
+            "name": "lookup_order",
+            "description": "Fetch an order by its id, e.g. N1001.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ]
+            }
+          },
+          {
+            "name": "check_policy",
+            "description": "Check whether an order can be refunded under the 30-day returns policy.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id",
+                "reason"
+              ]
+            }
+          },
+          {
+            "name": "issue_refund",
+            "description": "Refund an order to the original payment method. Irreversible.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "order_id",
+                "amount"
+              ]
+            }
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hi, my trail shoes from order N1001 fell apart. Refund please?"
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "text": "Let me pull up that order.",
+                "type": "text"
+              },
+              {
+                "id": "toolu_0001",
+                "input": {
+                  "order_id": "N1001"
+                },
+                "name": "lookup_order",
+                "type": "tool_use"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "toolu_0001",
+                "content": "{\"order_id\": \"N1001\", \"item\": \"Trail running shoes\", \"total\": 129.0, \"delivered\": \"2026-10-20\", \"status\": \"delivered\"}"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "id": "toolu_0003",
+                "input": {
+                  "order_id": "N1001",
+                  "reason": "Hi, my trail shoes from order N1001 fell apart. Refund please?"
+                },
+                "name": "check_policy",
+                "type": "tool_use"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "toolu_0003",
+                "content": "{\"eligible\": true, \"max_amount\": 129.0}"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "id": "toolu_0005",
+                "input": {
+                  "order_id": "N1001",
+                  "amount": 129.0
+                },
+                "name": "issue_refund",
+                "type": "tool_use"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "toolu_0005",
+                "content": "{\"refunded\": 129.0, \"order_id\": \"N1001\", \"reference\": \"RF-N1001\"}"
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "id": "msg_000007",
+        "content": [
+          {
+            "text": "Done. $129.00 is on its way back to your card (reference RF-N1001). It usually lands in 3 to 5 days.",
+            "type": "text"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "end_turn",
+        "type": "message",
+        "usage": {
+          "input_tokens": 585,
+          "output_tokens": 32
+        }
+      },
+      "latency_ms": 0
+    }
+  ]
+}

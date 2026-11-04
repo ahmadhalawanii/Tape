@@ -1,0 +1,394 @@
+{
+  "llmtape": 1,
+  "meta": {
+    "test": "examples/refund_desk/test_refund_desk.py::test_declines_an_order_outside_the_window",
+    "mode": "record",
+    "recorded_at": "2026-11-04T11:11:28+00:00"
+  },
+  "events": [
+    {
+      "kind": "model",
+      "endpoint": "messages",
+      "fingerprint": "1c1a80b2f134d6e7",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "max_tokens": 4096,
+        "system": "You are the returns desk for Northwind Outdoor, an online outdoor gear shop.\n\nHelp customers with refunds. For every refund request:\n1. Look up the order with lookup_order.\n2. Always call check_policy before issue_refund. Only refund when the policy allows it.\n3. If the policy refuses, explain why politely and offer store credit instead.\n\nBe brief and friendly. Never promise anything the tools did not confirm.",
+        "tools": [
+          {
+            "name": "lookup_order",
+            "description": "Fetch an order by its id, e.g. N1001.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ]
+            }
+          },
+          {
+            "name": "check_policy",
+            "description": "Check whether an order can be refunded under the 30-day returns policy.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id",
+                "reason"
+              ]
+            }
+          },
+          {
+            "name": "issue_refund",
+            "description": "Refund an order to the original payment method. Irreversible.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "order_id",
+                "amount"
+              ]
+            }
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "I'd like a refund for my tent, order N1002."
+          }
+        ]
+      },
+      "response": {
+        "id": "msg_000009",
+        "content": [
+          {
+            "text": "Let me pull up that order.",
+            "type": "text"
+          },
+          {
+            "id": "toolu_0008",
+            "input": {
+              "order_id": "N1002"
+            },
+            "name": "lookup_order",
+            "type": "tool_use"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "tool_use",
+        "type": "message",
+        "usage": {
+          "input_tokens": 304,
+          "output_tokens": 38
+        }
+      },
+      "latency_ms": 0
+    },
+    {
+      "kind": "tool",
+      "name": "lookup_order",
+      "input": {
+        "order_id": "N1002"
+      },
+      "output": {
+        "order_id": "N1002",
+        "item": "4-season tent",
+        "total": 489.0,
+        "delivered": "2026-09-01",
+        "status": "delivered"
+      }
+    },
+    {
+      "kind": "model",
+      "endpoint": "messages",
+      "fingerprint": "9e111dcc18a7cf27",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "max_tokens": 4096,
+        "system": "You are the returns desk for Northwind Outdoor, an online outdoor gear shop.\n\nHelp customers with refunds. For every refund request:\n1. Look up the order with lookup_order.\n2. Always call check_policy before issue_refund. Only refund when the policy allows it.\n3. If the policy refuses, explain why politely and offer store credit instead.\n\nBe brief and friendly. Never promise anything the tools did not confirm.",
+        "tools": [
+          {
+            "name": "lookup_order",
+            "description": "Fetch an order by its id, e.g. N1001.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ]
+            }
+          },
+          {
+            "name": "check_policy",
+            "description": "Check whether an order can be refunded under the 30-day returns policy.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id",
+                "reason"
+              ]
+            }
+          },
+          {
+            "name": "issue_refund",
+            "description": "Refund an order to the original payment method. Irreversible.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "order_id",
+                "amount"
+              ]
+            }
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "I'd like a refund for my tent, order N1002."
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "text": "Let me pull up that order.",
+                "type": "text"
+              },
+              {
+                "id": "toolu_0008",
+                "input": {
+                  "order_id": "N1002"
+                },
+                "name": "lookup_order",
+                "type": "tool_use"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "toolu_0008",
+                "content": "{\"order_id\": \"N1002\", \"item\": \"4-season tent\", \"total\": 489.0, \"delivered\": \"2026-09-01\", \"status\": \"delivered\"}"
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "id": "msg_000011",
+        "content": [
+          {
+            "id": "toolu_0010",
+            "input": {
+              "order_id": "N1002",
+              "reason": "I'd like a refund for my tent, order N1002."
+            },
+            "name": "check_policy",
+            "type": "tool_use"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "tool_use",
+        "type": "message",
+        "usage": {
+          "input_tokens": 409,
+          "output_tokens": 38
+        }
+      },
+      "latency_ms": 1
+    },
+    {
+      "kind": "tool",
+      "name": "check_policy",
+      "input": {
+        "order_id": "N1002",
+        "reason": "I'd like a refund for my tent, order N1002."
+      },
+      "output": {
+        "eligible": false,
+        "why": "delivered 64 days ago; the window is 30 days"
+      }
+    },
+    {
+      "kind": "model",
+      "endpoint": "messages",
+      "fingerprint": "17d3063c0cddd994",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "max_tokens": 4096,
+        "system": "You are the returns desk for Northwind Outdoor, an online outdoor gear shop.\n\nHelp customers with refunds. For every refund request:\n1. Look up the order with lookup_order.\n2. Always call check_policy before issue_refund. Only refund when the policy allows it.\n3. If the policy refuses, explain why politely and offer store credit instead.\n\nBe brief and friendly. Never promise anything the tools did not confirm.",
+        "tools": [
+          {
+            "name": "lookup_order",
+            "description": "Fetch an order by its id, e.g. N1001.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ]
+            }
+          },
+          {
+            "name": "check_policy",
+            "description": "Check whether an order can be refunded under the 30-day returns policy.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id",
+                "reason"
+              ]
+            }
+          },
+          {
+            "name": "issue_refund",
+            "description": "Refund an order to the original payment method. Irreversible.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "order_id",
+                "amount"
+              ]
+            }
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "I'd like a refund for my tent, order N1002."
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "text": "Let me pull up that order.",
+                "type": "text"
+              },
+              {
+                "id": "toolu_0008",
+                "input": {
+                  "order_id": "N1002"
+                },
+                "name": "lookup_order",
+                "type": "tool_use"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "toolu_0008",
+                "content": "{\"order_id\": \"N1002\", \"item\": \"4-season tent\", \"total\": 489.0, \"delivered\": \"2026-09-01\", \"status\": \"delivered\"}"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "id": "toolu_0010",
+                "input": {
+                  "order_id": "N1002",
+                  "reason": "I'd like a refund for my tent, order N1002."
+                },
+                "name": "check_policy",
+                "type": "tool_use"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "toolu_0010",
+                "content": "{\"eligible\": false, \"why\": \"delivered 64 days ago; the window is 30 days\"}"
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "id": "msg_000012",
+        "content": [
+          {
+            "text": "I'm sorry, the 4-season tent can't be refunded: it was delivered 64 days ago; the window is 30 days. I can offer $489.00 in store credit instead. Would that help?",
+            "type": "text"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "end_turn",
+        "type": "message",
+        "usage": {
+          "input_tokens": 502,
+          "output_tokens": 48
+        }
+      },
+      "latency_ms": 1
+    }
+  ]
+}

@@ -1,0 +1,396 @@
+{
+  "llmtape": 1,
+  "meta": {
+    "prompt": "after",
+    "recorded_against": "scripted stand-in model (examples/refund_desk/scripted_model.py)",
+    "mode": "record",
+    "recorded_at": "2026-11-04T11:17:58+00:00"
+  },
+  "events": [
+    {
+      "kind": "model",
+      "endpoint": "messages",
+      "fingerprint": "02a804f34880f9a2",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "max_tokens": 4096,
+        "system": "You are the friendly returns desk for Northwind Outdoor.\n\nCustomers come first: look up their order and sort out their refund quickly.\nKeep replies short and warm.",
+        "tools": [
+          {
+            "name": "lookup_order",
+            "description": "Fetch an order by its id, e.g. N1001.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ]
+            }
+          },
+          {
+            "name": "check_policy",
+            "description": "Check whether an order can be refunded under the 30-day returns policy.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id",
+                "reason"
+              ]
+            }
+          },
+          {
+            "name": "issue_refund",
+            "description": "Refund an order to the original payment method. Irreversible.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "order_id",
+                "amount"
+              ]
+            }
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "I'd like a refund for my tent, order N1002."
+          }
+        ]
+      },
+      "response": {
+        "id": "msg_000007",
+        "content": [
+          {
+            "text": "Let me pull up that order.",
+            "type": "text"
+          },
+          {
+            "id": "toolu_0006",
+            "input": {
+              "order_id": "N1002"
+            },
+            "name": "lookup_order",
+            "type": "tool_use"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "tool_use",
+        "type": "message",
+        "usage": {
+          "input_tokens": 241,
+          "output_tokens": 38
+        }
+      },
+      "latency_ms": 1
+    },
+    {
+      "kind": "tool",
+      "name": "lookup_order",
+      "input": {
+        "order_id": "N1002"
+      },
+      "output": {
+        "order_id": "N1002",
+        "item": "4-season tent",
+        "total": 489.0,
+        "delivered": "2026-09-01",
+        "status": "delivered"
+      }
+    },
+    {
+      "kind": "model",
+      "endpoint": "messages",
+      "fingerprint": "82124ae054b89fe0",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "max_tokens": 4096,
+        "system": "You are the friendly returns desk for Northwind Outdoor.\n\nCustomers come first: look up their order and sort out their refund quickly.\nKeep replies short and warm.",
+        "tools": [
+          {
+            "name": "lookup_order",
+            "description": "Fetch an order by its id, e.g. N1001.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ]
+            }
+          },
+          {
+            "name": "check_policy",
+            "description": "Check whether an order can be refunded under the 30-day returns policy.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id",
+                "reason"
+              ]
+            }
+          },
+          {
+            "name": "issue_refund",
+            "description": "Refund an order to the original payment method. Irreversible.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "order_id",
+                "amount"
+              ]
+            }
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "I'd like a refund for my tent, order N1002."
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "text": "Let me pull up that order.",
+                "type": "text"
+              },
+              {
+                "id": "toolu_0006",
+                "input": {
+                  "order_id": "N1002"
+                },
+                "name": "lookup_order",
+                "type": "tool_use"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "toolu_0006",
+                "content": "{\"order_id\": \"N1002\", \"item\": \"4-season tent\", \"total\": 489.0, \"delivered\": \"2026-09-01\", \"status\": \"delivered\"}"
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "id": "msg_000009",
+        "content": [
+          {
+            "id": "toolu_0008",
+            "input": {
+              "order_id": "N1002",
+              "amount": 489.0
+            },
+            "name": "issue_refund",
+            "type": "tool_use"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "tool_use",
+        "type": "message",
+        "usage": {
+          "input_tokens": 346,
+          "output_tokens": 28
+        }
+      },
+      "latency_ms": 1
+    },
+    {
+      "kind": "tool",
+      "name": "issue_refund",
+      "input": {
+        "order_id": "N1002",
+        "amount": 489.0
+      },
+      "output": {
+        "refunded": 489.0,
+        "order_id": "N1002",
+        "reference": "RF-N1002"
+      }
+    },
+    {
+      "kind": "model",
+      "endpoint": "messages",
+      "fingerprint": "e0367b88407309fc",
+      "request": {
+        "model": "claude-haiku-5-5",
+        "max_tokens": 4096,
+        "system": "You are the friendly returns desk for Northwind Outdoor.\n\nCustomers come first: look up their order and sort out their refund quickly.\nKeep replies short and warm.",
+        "tools": [
+          {
+            "name": "lookup_order",
+            "description": "Fetch an order by its id, e.g. N1001.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ]
+            }
+          },
+          {
+            "name": "check_policy",
+            "description": "Check whether an order can be refunded under the 30-day returns policy.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id",
+                "reason"
+              ]
+            }
+          },
+          {
+            "name": "issue_refund",
+            "description": "Refund an order to the original payment method. Irreversible.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "order_id",
+                "amount"
+              ]
+            }
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "I'd like a refund for my tent, order N1002."
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "text": "Let me pull up that order.",
+                "type": "text"
+              },
+              {
+                "id": "toolu_0006",
+                "input": {
+                  "order_id": "N1002"
+                },
+                "name": "lookup_order",
+                "type": "tool_use"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "toolu_0006",
+                "content": "{\"order_id\": \"N1002\", \"item\": \"4-season tent\", \"total\": 489.0, \"delivered\": \"2026-09-01\", \"status\": \"delivered\"}"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "id": "toolu_0008",
+                "input": {
+                  "order_id": "N1002",
+                  "amount": 489.0
+                },
+                "name": "issue_refund",
+                "type": "tool_use"
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "toolu_0008",
+                "content": "{\"refunded\": 489.0, \"order_id\": \"N1002\", \"reference\": \"RF-N1002\"}"
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "id": "msg_000010",
+        "content": [
+          {
+            "text": "Done. $489.00 is on its way back to your card (reference RF-N1002). It usually lands in 3 to 5 days.",
+            "type": "text"
+          }
+        ],
+        "model": "claude-haiku-5-5",
+        "role": "assistant",
+        "stop_reason": "end_turn",
+        "type": "message",
+        "usage": {
+          "input_tokens": 427,
+          "output_tokens": 32
+        }
+      },
+      "latency_ms": 1
+    }
+  ]
+}
