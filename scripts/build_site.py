@@ -232,8 +232,8 @@ pre.rc .d { color: #8A867E; } pre.rc .x { color: var(--red); } pre.rc .hl { back
 footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 26px 80px 34px; font: 13px var(--mono); color: var(--soft); }
 @media (max-width: 900px) { footer { padding: 26px 20px 34px; } }
 
-.rise { opacity: 0; transform: translateY(16px); transition: opacity .9s var(--ease), transform .9s var(--ease); }
-.rise.in { opacity: 1; transform: none; }
+.js .rise.below { opacity: 0; transform: translateY(16px); }
+.rise { transition: opacity .9s var(--ease), transform .9s var(--ease); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .rise, .printing .ln { opacity: 1 !important; transform: none !important; }
@@ -278,7 +278,7 @@ footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wr
     <p class="sub">A returns agent's prompt was rewritten to sound warmer, and the rewrite dropped a single rule: always check the refund policy first. Every reply still read fine. The replay test failed on the first call.</p>
     <div class="big" aria-label="$489"><small>$</small><span id="count">489</span></div>
   </div>
-  <pre class="rc printing" id="rc" aria-label="Replay receipt: check_policy skipped, issue_refund 489 dollars, caught by Tape at call 0">__REFUND__</pre>
+  <pre class="rc" id="rc" aria-label="Replay receipt: check_policy skipped, issue_refund 489 dollars, caught by Tape at call 0">__REFUND__</pre>
 </section>
 
 <section class="band" id="how">
@@ -352,6 +352,7 @@ LLMTAPE_MODE=update.</span></pre>
 <footer><span>BUILT BY AHMAD HALAWANI</span><a href="https://github.com/ahmadhalawanii/Tape">GITHUB.COM/AHMADHALAWANII/TAPE</a></footer>
 
 <script>
+document.documentElement.classList.add("js");
 (function () {
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -371,13 +372,15 @@ LLMTAPE_MODE=update.</span></pre>
     if (e.isIntersecting) { obs.disconnect(); fn(); }
   }, { threshold }).observe(el);
 
-  document.querySelectorAll(".rise").forEach(el => once(el, () => el.classList.add("in"), .15));
+  // Content is visible without JavaScript; only sections still below the fold fade up when reached.
+  if (!reduce) document.querySelectorAll(".rise").forEach(el => {
+    if (el.getBoundingClientRect().top > innerHeight) { el.classList.add("below"); once(el, () => el.classList.remove("below"), .15); }
+  });
 
   // the receipt prints line by line, and the total counts up beside it
   const rc = document.getElementById("rc"), lines = [...rc.querySelectorAll(".ln")], count = document.getElementById("count");
-  if (reduce) { lines.forEach(l => l.classList.add("on")); }
-  else {
-    count.textContent = "0";
+  if (!reduce && rc.getBoundingClientRect().top > innerHeight) {
+    rc.classList.add("printing"); count.textContent = "0";
     once(rc, () => {
       lines.forEach((l, i) => setTimeout(() => l.classList.add("on"), i * 70));
       const start = performance.now(), dur = lines.length * 70;
