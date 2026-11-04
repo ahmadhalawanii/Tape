@@ -18,16 +18,16 @@ first model call, and the diff shows the agent now refunds a $489 tent that is o
 
 ## Why
 
-Agent behaviour is decided by the model at run time, so an ordinary unit test can't
-pin it down. The usual options are both poor:
+The model decides what an agent does at run time, so an ordinary unit test can't pin
+it down. The two usual options both fall short:
 
 - **Call the real model in tests.** Slow, costs money on every run, and flaky, because
   the same prompt can get a different answer.
 - **Mock the model by hand.** Fast, but the mocks drift from reality and nobody notices.
 
-Tape is the middle path: record real runs once, then replay them. A replay fails the
-moment the agent sends the model something different from the recording, which is
-exactly when its behaviour may have changed.
+Tape records real runs once and replays them. A replay fails the moment the agent sends
+the model something different from the recording, because that is when its behaviour may
+have changed.
 
 ## Install
 
@@ -127,8 +127,8 @@ tape report tests/tapes -o report.html                # browse every tape
 tape stats tests/tapes                                # calls, tokens and cost per tape
 ```
 
-`tape diff` compares behaviour, not JSON. It aligns the two runs' tool calls and reports
-skipped calls, new calls and changed arguments. It also shows the first request that
+`tape diff` aligns the two runs' tool calls and reports skipped calls, new calls and
+changed arguments, rather than a line diff of the JSON. It also shows the first request that
 differs, the final reply, and token, cost and latency changes.
 
 ## In CI
@@ -146,8 +146,9 @@ sees "now calls issue_refund" next to the prompt edit that caused it.
   recording. Pass `scrub=[(r"\d{4}-\d{2}-\d{2}", "<date>")]` to normalise it.
 - **Runs that end early.** In strict replay, a run that makes fewer model calls than the
   recording fails too.
-- **Secrets.** Headers and API keys are never written. Tapes hold the request body and
-  the response only.
+- **Secrets.** Headers are never written. Anthropic, OpenAI, AWS, GitHub, Stripe and Slack
+  keys that appear in prompts, responses or tool output are replaced with `<redacted>`
+  before anything is saved. Add `scrub` rules for anything else private, such as emails.
 - **Model output in the HTML page.** The page renders text with `textContent` and escapes
   embedded JSON, so a reply containing `</script>` can't inject markup.
 
