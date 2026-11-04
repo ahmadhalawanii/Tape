@@ -5,3 +5,6 @@ dist/
 build/
 .pytest_cache/
 tape-report.html
+
+# Personal Claude Code skills: kept locally, not published
+.claude/
