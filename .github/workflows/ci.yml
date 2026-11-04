@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[dev]"
+      # Replay only: a missing or stale tape fails the build instead of calling the API.
+      - run: pytest --tape-mode=replay
+
+  behaviour-diff:
+    # On a pull request, summarise how every changed tape alters the agent's behaviour.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e .
+      - name: Diff changed tapes
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          found=0
+          while IFS= read -r f; do
+            found=1
+            if [ -f "$f" ] && git cat-file -e "$BASE:$f" 2>/dev/null; then
+              tape diff "$f" --git "$BASE" --format markdown >> "$GITHUB_STEP_SUMMARY"
+              echo >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done < <(git diff --name-only "$BASE" HEAD -- ':(glob)**/tapes/**/*.json' ':(glob)docs/demo/*.json')
+          [ "$found" = 1 ] || echo "No tapes changed." >> "$GITHUB_STEP_SUMMARY"
