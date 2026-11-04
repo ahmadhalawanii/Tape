@@ -45,7 +45,7 @@ Scrubber = tuple[str, str]  # (regex, replacement)
 
 def scrub(value: Any, scrubbers: Iterable[Scrubber]) -> Any:
     """Apply regex replacements to every string in a JSON value."""
-    compiled = [(re.compile(p) if isinstance(p, str) else p, r) for p, r in scrubbers]
+    compiled = [(re.compile(p), r) for p, r in scrubbers]   # re caches compiled patterns
     if not compiled:
         return value
 
@@ -63,9 +63,24 @@ def scrub(value: Any, scrubbers: Iterable[Scrubber]) -> Any:
     return walk(value)
 
 
+# Credential formats that must never reach a tape file, whatever the user's own scrubbers say.
+SECRET_SCRUBBERS: list[Scrubber] = [
+    (r"sk-ant-[A-Za-z0-9_-]{20,}", "<redacted>"),                 # Anthropic
+    (r"sk-(?:proj-)?[A-Za-z0-9_-]{20,}", "<redacted>"),           # OpenAI
+    (r"\bAKIA[0-9A-Z]{16}\b", "<redacted>"),                      # AWS access key id
+    (r"\bgh[pousr]_[A-Za-z0-9]{36,}", "<redacted>"),               # GitHub
+    (r"\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}", "<redacted>"),     # Stripe
+    (r"\bxox[abprs]-[A-Za-z0-9-]{10,}", "<redacted>"),             # Slack
+]
+
+
+def redact(value: Any) -> Any:
+    return scrub(value, SECRET_SCRUBBERS)
+
+
 def normalize_request(kwargs: dict, scrubbers: Iterable[Scrubber] = ()) -> dict:
     data = {k: v for k, v in kwargs.items() if k not in VOLATILE_KEYS}
-    return scrub(to_jsonable(data), scrubbers)
+    return scrub(redact(to_jsonable(data)), scrubbers)
 
 
 def canonical(value: Any) -> str:

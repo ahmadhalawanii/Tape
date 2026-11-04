@@ -67,3 +67,10 @@ def test_cli_diff_against_git(tmp_path, capsys):
     write(path, "new reply")
     assert main(["diff", str(path), "--git", "HEAD", "--exit-code"]) == 1
     assert "final reply changed" in capsys.readouterr().out
+
+
+def test_git_revision_cannot_be_an_option(tmp_path):
+    import pytest
+    path = write(tmp_path / "t.json", "x")
+    with pytest.raises(SystemExit, match="not a git revision"):
+        main(["diff", str(path), "--git=--output=/tmp/pwned"])

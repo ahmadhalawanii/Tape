@@ -34,6 +34,8 @@ def _tapes(paths: list[str]) -> list[Tape]:
 
 
 def _from_git(rev: str, path: str) -> Tape:
+    if rev.startswith("-"):
+        raise SystemExit(f"tape: {rev!r} is not a git revision")
     file = Path(path).resolve()
     root = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=file.parent,
                                capture_output=True, text=True, check=True).stdout.strip())

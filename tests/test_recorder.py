@@ -183,3 +183,21 @@ def test_no_secrets_are_written(client, tmp_path):
         client.messages.create(model="m", max_tokens=5, extra_headers={"x-api-key": "sk-secret"},
                                messages=[{"role": "user", "content": "x"}])
     assert "sk-secret" not in path.read_text() and "scripted" not in path.read_text()
+
+
+def test_credentials_in_prompts_and_tool_output_are_redacted(client, tmp_path):
+    key = "sk-ant-api03-" + "x" * 40
+    path = tmp_path / "t.json"
+
+    @llmtape.tool
+    def leaky() -> dict:
+        return {"aws": "AKIA" + "A" * 16}
+
+    with llmtape.use(path, "record"):
+        ask(client, f"my key is {key}")
+        leaky()
+    text = path.read_text()
+    assert key not in text and "AKIA" not in text and "<redacted>" in text
+    with llmtape.use(path, "replay"):           # redaction is applied the same way on replay
+        ask(client, f"my key is {key}")
+        leaky()
